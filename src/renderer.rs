@@ -15,7 +15,7 @@ pub fn render(canvas: &mut WindowCanvas, color: Color, texture: &Texture,
         let screen_rect = Rect::from_center(screen_position, entity.sprite.width(),
             entity.sprite.height());
 
-        canvas.copy(texture, entity.sprite, screen_rect)?;
+        canvas.copy_ex(texture, entity.current_frame(), screen_rect, 0.0, None, entity.flip_frame_horizontal(), false)?;
     //}
 
     canvas.present();

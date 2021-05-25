@@ -1,35 +1,35 @@
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum Direction {
-    LEFT,
-    RIGHT,
-    UP,
-    DOWN,
+    Left,
+    Right,
+    Up,
+    Down,
 }
 
 impl Direction {
     pub fn dx(&self) -> i32 {
         match self {
-            Direction::LEFT => -1,
-            Direction::RIGHT => 1,
-            Direction::UP => 0,
-            Direction::DOWN => 0,
+            Direction::Left => -1,
+            Direction::Right => 1,
+            Direction::Up => 0,
+            Direction::Down => 0,
         }
     }
     pub fn dy(&self) -> i32 {
         match *self {
-            Direction::LEFT => 0,
-            Direction::RIGHT =>0,
-            Direction::UP => -1,
-            Direction::DOWN => 1,
+            Direction::Left => 0,
+            Direction::Right =>0,
+            Direction::Up => -1,
+            Direction::Down => 1,
         }
     }
 
     pub fn get_opposite(&self) -> Direction {
         match *self {
-            Direction::LEFT => Direction::RIGHT,
-            Direction::RIGHT => Direction::LEFT,
-            Direction::UP => Direction::DOWN,
-            Direction::DOWN => Direction::UP,
+            Direction::Left => Direction::Right,
+            Direction::Right => Direction::Left,
+            Direction::Up => Direction::Down,
+            Direction::Down => Direction::Up,
         }
     }
 }

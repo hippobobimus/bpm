@@ -19,10 +19,10 @@ use crate::{
 lazy_static! {
     static ref MOVEMENT_KEYS_MAP: HashMap<Keycode, Direction> = {
         let mut map = HashMap::new();
-            map.insert(Keycode::Left, Direction::LEFT);
-            map.insert(Keycode::Right, Direction::RIGHT);
-            map.insert(Keycode::Up, Direction::UP);
-            map.insert(Keycode::Down, Direction::DOWN);
+            map.insert(Keycode::Left, Direction::Left);
+            map.insert(Keycode::Right, Direction::Right);
+            map.insert(Keycode::Up, Direction::Up);
+            map.insert(Keycode::Down, Direction::Down);
             map
     };
 }
@@ -45,11 +45,12 @@ pub fn run() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     let texture_creator = canvas.texture_creator();
-    let texture = texture_creator.load_texture("assets/main_char_spritesheet.png")?;
+    let texture = texture_creator.load_texture("assets/char_spritesheet.png")?;
 
     //let mut entity_list = LinkedList::new();
 
-    let mut player = Entity::new(Point::new(0, 0), Rect::new(30, 21, 12, 16));
+    let sprite = Rect::new(177, 0, 14, 24);
+    let mut player = Entity::new(Point::new(0, 0), sprite);
 
     let mut event_pump = sdl_context.event_pump()?;
     let mut i = 0;
@@ -82,7 +83,7 @@ pub fn run() -> Result<(), String> {
         // Render
         renderer::render(&mut canvas, Color::RGB(i, 64, 255 -i), &texture, &player)?;
 
-        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
+        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 20));
     }
 
     Ok(())
