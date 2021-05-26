@@ -1,36 +1,37 @@
 use specs::prelude::*;
 
 use crate::{
-    commands::MovementCommand,
     components::*,
     constants,
-    //direction::Direction,
+    resources::{MovementCommand, MovementCommandQueue},
 };
 
 pub struct Keyboard;
 
+#[derive(SystemData)]
+pub struct KeyboardData<'a> {
+    movement_command_queue: WriteExpect<'a, MovementCommandQueue>,
+    keyboard_controlled: ReadStorage<'a, KeyboardControlled>,
+    velocity: WriteStorage<'a, Velocity>,
+}
+
 impl<'a> System<'a> for Keyboard {
-    type SystemData = (
-        ReadExpect<'a, Option<MovementCommand>>,
-        ReadStorage<'a, KeyboardControlled>,
-        WriteStorage<'a, Velocity>,
-    );
+    type SystemData = KeyboardData<'a>;
 
-    // possible extension: parallel join with rayon
+    // TODO possible extension: parallel join with rayon
+    // irrefutable patterns
     fn run(&mut self, mut data: Self::SystemData) {
-        // TODO irrefutable patterns
-        let movement_command = match &*data.0 {
-            Some(movement_command) => movement_command,
-            None => return,
-        };
+        let movement_command = data.movement_command_queue.get_next();
 
-        for (_, vel) in (&data.1, &mut data.2).join() {
+        for (_, vel) in (&data.keyboard_controlled, &mut data.velocity).join() {
             match movement_command {
-                &MovementCommand::Move(direction) => {
+                MovementCommand::Move(dir) => {
                     vel.speed = constants::PLAYER_MOVEMENT_SPEED;
-                    vel.direction = direction;
+                    vel.direction = dir;
                 },
-                MovementCommand::Stop => vel.speed = 0,
+                MovementCommand::Stop => {
+                    vel.speed = 0;
+                },
             }
         }
     }

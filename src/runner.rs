@@ -8,16 +8,15 @@ use sdl2::{
     rect::{Point, Rect},
 };
 use specs::prelude::*;
+
 use std::{
-    collections::{
-        HashMap,
-        HashSet,
-    },
+    collections::{HashMap, HashSet},
     time::Duration,
 };
+
 use crate::{
     animator::Animator,
-    commands::MovementCommand,
+    resources::MovementCommandQueue,
     components::*,
     constants,
     direction::Direction,
@@ -41,7 +40,7 @@ lazy_static! {
 
 /// Returns true if the game loop should be exited.
 fn process_events(world: &World, event_pump: &mut EventPump) -> bool {
-        let mut movement_command = None;
+        //let mut movement_command = None;
 
         for event in event_pump.poll_iter() {
             match event {
@@ -52,19 +51,18 @@ fn process_events(world: &World, event_pump: &mut EventPump) -> bool {
                 Event::KeyDown { keycode: Some(k), repeat: false, .. } if MOVEMENT_KEYS_MAP.contains_key(&k) => {
                     let dir = MOVEMENT_KEYS_MAP.get(&k).unwrap(); // already verified contains
 
-                    movement_command = Some(MovementCommand::Move(*dir));
+                    let mut mcq = world.write_resource::<MovementCommandQueue>();
+                    mcq.add(*dir);
                 },
                 Event::KeyUp { keycode: Some(k), repeat: false, .. } if MOVEMENT_KEYS_MAP.contains_key(&k) => {
-                    //let dir = MOVEMENT_KEYS_MAP.get(&k).unwrap();
+                    let dir = MOVEMENT_KEYS_MAP.get(&k).unwrap();
 
-                    movement_command = Some(MovementCommand::Stop);
-                    //player.deactivate_direction(*dir);
+                    let mut mcq = world.write_resource::<MovementCommandQueue>();
+                    mcq.remove(*dir);
                 },
                 _ => {}
             }
         }
-
-        *world.write_resource() = movement_command;
 
         false
 }
@@ -107,8 +105,8 @@ pub fn run() -> Result<(), String> {
     renderer::SystemData::setup(&mut world);
 
     // initialise resources
-    let movement_command: Option<MovementCommand> = None;
-    world.insert(movement_command);
+    let movement_command_queue: MovementCommandQueue = MovementCommandQueue::new();
+    world.insert(movement_command_queue);
 
     // entities
     let player_spritesheet = 0;
@@ -145,7 +143,6 @@ pub fn run() -> Result<(), String> {
         };
 
         // Update
-        //player.update();
         i = (i + 1) % 255; // update bckgrnd color
         dispatcher.dispatch(&world);
         world.maintain();
