@@ -13,7 +13,7 @@ pub type SystemData<'a> = (
 );
 
 pub fn render(canvas: &mut WindowCanvas, background: Color, textures: &[Texture], data: SystemData)
-    -> Result<(), String> {
+              -> Result<(), String> {
     canvas.set_draw_color(background);
     canvas.clear();
 

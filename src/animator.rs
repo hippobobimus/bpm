@@ -5,18 +5,22 @@ use crate::{
     direction::Direction,
 };
 
+#[derive(SystemData)]
+pub struct AnimationData<'a> {
+    movement_animation: WriteStorage<'a, MovementAnimation>,
+    sprite: WriteStorage<'a, Sprite>,
+    velocity: ReadStorage<'a, Velocity>,
+}
+
 pub struct Animator;
 
 impl<'a> System<'a> for Animator {
-    type SystemData = (
-        WriteStorage<'a, MovementAnimation>,
-        WriteStorage<'a, Sprite>,
-        ReadStorage<'a, Velocity>,
-    );
+    type SystemData = AnimationData<'a>;
 
-    // possible extension: parallel join with rayon
+    // TODO possible extension: parallel join with rayon
     fn run(&mut self, mut data: Self::SystemData) {
-        for (anim, sprite, vel) in (&mut data.0, &mut data.1, &data.2).join() {
+        for (anim, sprite, vel) in (&mut data.movement_animation, &mut data.sprite,
+                                    &data.velocity).join() {
             if vel.speed == 0 {
                 continue;
             }

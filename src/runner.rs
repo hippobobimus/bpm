@@ -1,71 +1,25 @@
-use lazy_static::lazy_static;
 use sdl2::{
-    event::Event,
-    EventPump,
     image::{InitFlag, LoadTexture},
-    keyboard::Keycode,
     pixels::Color,
     rect::{Point, Rect},
 };
 use specs::prelude::*;
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     time::Duration,
 };
 
 use crate::{
     animator::Animator,
-    resources::MovementCommandQueue,
+    resources::MovementCommandStack,
     components::*,
     constants,
-    direction::Direction,
-    entity,
+    event_processor,
     keyboard::Keyboard,
     physics::Physics,
     renderer,
 };
-
-// A mapping that associates keycodes to the cardinal movement directions.
-lazy_static! {
-    static ref MOVEMENT_KEYS_MAP: HashMap<Keycode, Direction> = {
-        let mut map = HashMap::new();
-        map.insert(Keycode::Left, Direction::Left);
-        map.insert(Keycode::Right, Direction::Right);
-        map.insert(Keycode::Up, Direction::Up);
-        map.insert(Keycode::Down, Direction::Down);
-        map
-    };
-}
-
-/// Returns true if the game loop should be exited.
-fn process_events(world: &World, event_pump: &mut EventPump) -> bool {
-        //let mut movement_command = None;
-
-        for event in event_pump.poll_iter() {
-            match event {
-                Event::Quit {..} |
-                Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-                    return true;
-                },
-                Event::KeyDown { keycode: Some(k), repeat: false, .. } if MOVEMENT_KEYS_MAP.contains_key(&k) => {
-                    let dir = MOVEMENT_KEYS_MAP.get(&k).unwrap(); // already verified contains
-
-                    let mut mcq = world.write_resource::<MovementCommandQueue>();
-                    mcq.add(*dir);
-                },
-                Event::KeyUp { keycode: Some(k), repeat: false, .. } if MOVEMENT_KEYS_MAP.contains_key(&k) => {
-                    let dir = MOVEMENT_KEYS_MAP.get(&k).unwrap();
-
-                    let mut mcq = world.write_resource::<MovementCommandQueue>();
-                    mcq.remove(*dir);
-                },
-                _ => {}
-            }
-        }
-
-        false
-}
 
 pub fn run() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
@@ -105,20 +59,13 @@ pub fn run() -> Result<(), String> {
     renderer::SystemData::setup(&mut world);
 
     // initialise resources
-    let movement_command_queue: MovementCommandQueue = MovementCommandQueue::new();
+    let movement_command_queue: MovementCommandStack = MovementCommandStack::new();
     world.insert(movement_command_queue);
 
     // entities
     let player_spritesheet = 0;
-    let player_origin_frame = Rect::new(177, 0, 14, 24);
-
-    let player_animation = MovementAnimation {
-        current_frame: 0,
-        left_frames: entity::sprite_animation_frames(player_spritesheet, player_origin_frame, Direction::Left),
-        right_frames: entity::sprite_animation_frames(player_spritesheet, player_origin_frame, Direction::Right),
-        up_frames: entity::sprite_animation_frames(player_spritesheet, player_origin_frame, Direction::Up),
-        down_frames: entity::sprite_animation_frames(player_spritesheet, player_origin_frame, Direction::Down),
-    };
+    let player_initial_frame = Rect::new(177, 0, 14, 24);
+    let player_animation = MovementAnimation::new(player_spritesheet, player_initial_frame);
 
     world.create_entity()
         .with(KeyboardControlled)
@@ -128,7 +75,7 @@ pub fn run() -> Result<(), String> {
             direction: constants::DEFAULT_PLAYER_DIRECTION,
             active_directions: HashSet::new(),
         })
-        .with(player_animation.right_frames[0].clone())
+        .with(player_animation.right_frames[0].clone()) // Sprite
         .with(player_animation)
         .build();
 
@@ -137,7 +84,7 @@ pub fn run() -> Result<(), String> {
     let mut i = 0;
     'running: loop {
         // Event processing
-        let exit = process_events(&world, &mut event_pump);
+        let exit = event_processor::process_events(&world, &mut event_pump);
         if exit {
             break 'running
         };

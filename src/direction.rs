@@ -15,6 +15,7 @@ impl Direction {
             Direction::Down => 0,
         }
     }
+
     pub fn dy(&self) -> i32 {
         match *self {
             Direction::Left => 0,
