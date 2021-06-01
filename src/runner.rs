@@ -1,12 +1,11 @@
 use sdl2::{
     image::{InitFlag, LoadTexture},
     pixels::Color,
-    rect::{Point, Rect},
+    rect::Rect,
 };
 use specs::prelude::*;
 
 use std::{
-    collections::HashSet,
     time::Duration,
 };
 
@@ -14,7 +13,6 @@ use crate::{
     animator::Animator,
     resources::MovementCommandStack,
     components::*,
-    constants,
     event_processor,
     keyboard::Keyboard,
     physics::Physics,
@@ -69,11 +67,12 @@ pub fn run() -> Result<(), String> {
 
     world.create_entity()
         .with(KeyboardControlled)
-        .with(Position(Point::new(0, 0)))
-        .with(Velocity {
-            speed: 0,
-            direction: constants::DEFAULT_PLAYER_DIRECTION,
-            active_directions: HashSet::new(),
+        .with(Mass { value: 1.0 })
+        .with(Propulsion { x: 0.0, y: 0.0 })
+        .with(Resistance { x: 0.0, y: 0.0 })
+        .with(Position { x: 0.0, y: 0.0 })
+        .with(Velocity { x: 0.0, y: 0.0,
+            //direction: constants::DEFAULT_PLAYER_DIRECTION,
         })
         .with(player_animation.right_frames[0].clone()) // Sprite
         .with(player_animation)

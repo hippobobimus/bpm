@@ -1,10 +1,8 @@
 use sdl2::{
-    rect::{Point, Rect},
+    rect::Rect,
 };
 use specs::prelude::*;
 use specs_derive::Component;
-
-use std::collections::HashSet;
 
 use crate::direction::Direction;
 
@@ -18,14 +16,36 @@ pub struct KeyboardControlled;
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
-pub struct Position(pub Point);
+pub struct Mass {
+    pub value: f64,
+}
+
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+pub struct Propulsion {
+    pub x: f64,
+    pub y: f64,
+}
+
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+pub struct Resistance {
+    pub x: f64,
+    pub y: f64,
+}
+
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+pub struct Position {
+    pub x: f64,
+    pub y: f64,
+}
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
 pub struct Velocity {
-    pub speed: i32,
-    pub direction: Direction,
-    pub active_directions: HashSet<Direction>,
+    pub x: f64,
+    pub y: f64,
 }
 
 #[derive(Clone, Component, Debug)]

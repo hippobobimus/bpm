@@ -6,6 +6,7 @@ pub mod animator;
 pub mod components;
 pub mod constants;
 pub mod direction;
+pub mod entities;
 pub mod event_processor;
 pub mod keyboard;
 pub mod physics;

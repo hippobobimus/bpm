@@ -2,14 +2,13 @@ use specs::prelude::*;
 
 use crate::{
     components::*,
-    direction::Direction,
 };
 
 #[derive(SystemData)]
 pub struct AnimationData<'a> {
     movement_animation: WriteStorage<'a, MovementAnimation>,
     sprite: WriteStorage<'a, Sprite>,
-    velocity: ReadStorage<'a, Velocity>,
+    propulsion: ReadStorage<'a, Propulsion>,
 }
 
 pub struct Animator;
@@ -19,17 +18,22 @@ impl<'a> System<'a> for Animator {
 
     // TODO possible extension: parallel join with rayon
     fn run(&mut self, mut data: Self::SystemData) {
-        for (anim, sprite, vel) in (&mut data.movement_animation, &mut data.sprite,
-                                    &data.velocity).join() {
-            if vel.speed == 0 {
+        for (anim, sprite, prop) in (&mut data.movement_animation, &mut data.sprite,
+                                    &data.propulsion).join() {
+            if prop.x == 0.0 && prop.y == 0.0 {
                 continue;
             }
 
-            let frames = match vel.direction {
-                Direction::Left => &anim.left_frames,
-                Direction::Right => &anim.right_frames,
-                Direction::Up => &anim.up_frames,
-                Direction::Down => &anim.down_frames,
+            let frames: &Vec<Sprite> = if prop.x > 0.0 {
+                &anim.right_frames
+            } else if prop.x < 0.0 {
+                &anim.left_frames
+            } else if prop.y > 0.0 {
+                &anim.down_frames
+            } else if prop.y < 0.0 {
+                &anim.up_frames
+            } else {
+                continue;
             };
 
             anim.current_frame = (anim.current_frame + 1) % frames.len();
