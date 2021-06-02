@@ -23,7 +23,7 @@ impl<'a> System<'a> for Physics {
     fn run(&mut self, mut data: Self::SystemData) {
         for (mass, pos, vel, prop, res) in (&data.mass, &mut data.position, &mut data.velocity,
                                             &data.propulsion, &mut data.resistance).join() {
-            let dt = 1.0 / 20.0; // 20 Hz
+            let dt = constants::TIME_STEP;  // TODO parameterise
 
             // update velocity based on current forces applied.
             Self::update_velocity(vel, mass, prop, res, dt);
@@ -39,15 +39,14 @@ impl<'a> System<'a> for Physics {
 }
 
 impl Physics {
-
     fn update_velocity(vel: &mut Velocity, mass: &Mass, prop: &Propulsion, res: &Resistance,
                        dt: f64) {
         vel.x = vel.x + ((prop.x - res.x) / mass.value) * dt;
         vel.y = vel.y + ((prop.y - res.y) / mass.value) * dt;
 
         // ensure body comes to rest once the low velocity threshold has been reached.
-        if vel.x.abs() < 5.0 { vel.x = 0.0 };
-        if vel.y.abs() < 5.0 { vel.y = 0.0 };
+        if (prop.x == 0.0) && (vel.x.abs() < constants::LOW_VELOCITY_THRESHOLD) { vel.x = 0.0 };
+        if (prop.y == 0.0) && (vel.y.abs() < constants::LOW_VELOCITY_THRESHOLD) { vel.y = 0.0 };
     }
 
     fn update_resistance(res: &mut Resistance, vel: &Velocity) {

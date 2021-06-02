@@ -1,7 +1,8 @@
 use sdl2::{
     image::{InitFlag, LoadTexture},
     pixels::Color,
-    rect::Rect,
+    render::{WindowCanvas, Texture, TextureCreator},
+    surface::SurfaceContext,
 };
 use specs::prelude::*;
 
@@ -11,8 +12,9 @@ use std::{
 
 use crate::{
     animator::Animator,
+    constants,
+    entities::Spawner,
     resources::MovementCommandStack,
-    components::*,
     event_processor,
     keyboard::Keyboard,
     physics::Physics,
@@ -32,13 +34,35 @@ pub fn run() -> Result<(), String> {
 
     let mut canvas = window
         .into_canvas()
-        .software()
         .build()
         .map_err(|e| e.to_string())?;
 
     let texture_creator = canvas.texture_creator();
     let textures = [
-        texture_creator.load_texture("assets/char_spritesheet.png")?,
+        texture_creator.load_texture("assets/females/F_01.png")?,
+        texture_creator.load_texture("assets/females/F_02.png")?,
+        texture_creator.load_texture("assets/females/F_03.png")?,
+        texture_creator.load_texture("assets/females/F_04.png")?,
+        texture_creator.load_texture("assets/females/F_05.png")?,
+        texture_creator.load_texture("assets/females/F_06.png")?,
+        texture_creator.load_texture("assets/females/F_07.png")?,
+        texture_creator.load_texture("assets/females/F_08.png")?,
+        texture_creator.load_texture("assets/females/F_09.png")?,
+        texture_creator.load_texture("assets/females/F_10.png")?,
+        texture_creator.load_texture("assets/females/F_11.png")?,
+        texture_creator.load_texture("assets/females/F_12.png")?,
+        texture_creator.load_texture("assets/males/M_01.png")?,
+        texture_creator.load_texture("assets/males/M_02.png")?,
+        texture_creator.load_texture("assets/males/M_03.png")?,
+        texture_creator.load_texture("assets/males/M_04.png")?,
+        texture_creator.load_texture("assets/males/M_05.png")?,
+        texture_creator.load_texture("assets/males/M_06.png")?,
+        texture_creator.load_texture("assets/males/M_07.png")?,
+        texture_creator.load_texture("assets/males/M_08.png")?,
+        texture_creator.load_texture("assets/males/M_09.png")?,
+        texture_creator.load_texture("assets/males/M_10.png")?,
+        texture_creator.load_texture("assets/males/M_11.png")?,
+        texture_creator.load_texture("assets/males/M_12.png")?,
     ];
 
     let mut world = World::new();
@@ -61,42 +85,32 @@ pub fn run() -> Result<(), String> {
     world.insert(movement_command_queue);
 
     // entities
-    let player_spritesheet = 0;
-    let player_initial_frame = Rect::new(177, 0, 14, 24);
-    let player_animation = MovementAnimation::new(player_spritesheet, player_initial_frame);
+    let mut spawner = Spawner::new(&mut world);
+    spawner.spawn_player(0, 1.0, 0.0, 0.0);
 
-    world.create_entity()
-        .with(KeyboardControlled)
-        .with(Mass { value: 1.0 })
-        .with(Propulsion { x: 0.0, y: 0.0 })
-        .with(Resistance { x: 0.0, y: 0.0 })
-        .with(Position { x: 0.0, y: 0.0 })
-        .with(Velocity { x: 0.0, y: 0.0,
-            //direction: constants::DEFAULT_PLAYER_DIRECTION,
-        })
-        .with(player_animation.right_frames[0].clone()) // Sprite
-        .with(player_animation)
-        .build();
+    for i in 1..24 {
+        spawner.spawn_npc(i, 1.0, 0.0 + 10.0 * i as f64, 0.0);
+    }
 
     // game loop
     let mut event_pump = sdl_context.event_pump()?;
     let mut i = 0;
+    let mut exit;
     'running: loop {
         // Event processing
-        let exit = event_processor::process_events(&world, &mut event_pump);
-        if exit {
-            break 'running
-        };
+        exit = event_processor::process_events(&world, &mut event_pump);
+        if exit { break 'running };
 
         // Update
-        i = (i + 1) % 255; // update bckgrnd color
+        i = (i + 1) % 255; // update background color
+        let background_colour = Color::RGB(i, 64, 255 -i);
         dispatcher.dispatch(&world);
         world.maintain();
 
         // Render
-        renderer::render(&mut canvas, Color::RGB(i, 64, 255 -i), &textures, world.system_data())?;
+        renderer::render(&mut canvas, background_colour, &textures, world.system_data())?;
 
-        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 20));
+        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 * constants::TIME_STEP as u32));
     }
 
     Ok(())

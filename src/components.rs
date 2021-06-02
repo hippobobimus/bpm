@@ -4,7 +4,10 @@ use sdl2::{
 use specs::prelude::*;
 use specs_derive::Component;
 
-use crate::direction::Direction;
+use crate::{
+    constants,
+    direction::Direction,
+};
 
 // Marker components
 
@@ -59,6 +62,7 @@ pub struct Sprite {
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
 pub struct MovementAnimation {
+    pub ticks: i32,
     pub current_frame: usize,
     pub left_frames: Vec<Sprite>,
     pub right_frames: Vec<Sprite>,
@@ -67,8 +71,10 @@ pub struct MovementAnimation {
 }
 
 impl MovementAnimation {
+    /// Generates movement animation frames from a given spritesheet and initial sprite frame.
     pub fn new(spritesheet: usize, initial_frame: Rect) -> Self {
         MovementAnimation {
+            ticks: 0,
             current_frame: 0,
             left_frames: Self::animation_frames(spritesheet, initial_frame, Direction::Left),
             right_frames: Self::animation_frames(spritesheet, initial_frame, Direction::Right),
@@ -77,22 +83,27 @@ impl MovementAnimation {
         }
     }
 
+    /// Generates a series of animation frames from a spritesheet corresponding to a given
+    /// direction of travel.
     fn animation_frames(spritesheet: usize, initial_frame: Rect, direction: Direction)
                         -> Vec<Sprite> {
         let (frame_width, frame_height) = initial_frame.size();
     
         let mut frames = Vec::new();
 
-        for i in 0..4 {
-            let x_offset = 0; // TODO could be used for different characters
-            let y_offset = frame_height as i32 * (Self::spritesheet_row(direction) + (i % 2));
+        // Different columns in spritesheet represent different directions of travel.
+        let x_offset = Self::spritesheet_col(direction) * frame_width as i32;
+
+        for i in 0..constants::FRAMES_PER_ANIMATION {
+            // advance by one frame in the animation on each loop.
+            let y_offset = frame_height as i32 * Self::spritesheet_row(i);
 
             let region = Rect::new(initial_frame.x() + x_offset,
                                    initial_frame.y() + y_offset,
                                    frame_width,
                                    frame_height);
 
-            let flip_horizontal = Self::flip_frame_horizontal(direction, i);
+            let flip_horizontal = false;
 
             frames.push(Sprite { spritesheet, region, flip_horizontal });
         }
@@ -102,24 +113,24 @@ impl MovementAnimation {
 
     /// Converts a given direction of movement to the row index in the spritesheet containing the
     /// corresponding initial sprite frame.
-    fn spritesheet_row(direction: Direction) -> i32 {
+    fn spritesheet_col(direction: Direction) -> i32 {
         match direction {
-            Direction::Left => 2, // Left is the mirror of Right and must be flipped.
-            Direction::Right => 2,
-            Direction::Up => 4,
+            Direction::Left => 3,
+            Direction::Right => 1,
+            Direction::Up => 2,
             Direction::Down => 0,
         }
     }
-    
-    /// Left facing sprite is a flipped version of the right facing sprite.
-    /// The up/down sprite with one leg raised is flipped for the alternate footstep.
-    fn flip_frame_horizontal(direction: Direction, frame: i32) -> bool {
-        match direction {
-            Direction::Left => true,
-            Direction::Up | Direction::Down => {
-                frame == 3 // flip on the 3rd frame
-            },
-            _ => false,
+
+    /// Converts the frame index in a movement animation to the corresponding row in the
+    /// spritesheet.
+    fn spritesheet_row(frame_index: i32) -> i32 {
+        match frame_index {
+            0 => 0,
+            1 => 1,
+            2 => 0, // return to standing before stepping with other foot.
+            3 => 2,
+            _ => 0,
         }
     }
 }

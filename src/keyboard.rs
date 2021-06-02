@@ -35,8 +35,6 @@ impl<'a> System<'a> for Keyboard {
 
                     prop.x = new_prop_x;
                     prop.y = new_prop_y;
-
-                    
                 },
                 MovementCommand::Stop => {
                     prop.x = 0.0;
