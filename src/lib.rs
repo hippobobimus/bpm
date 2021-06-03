@@ -13,3 +13,4 @@ pub mod physics;
 pub mod renderer;
 pub mod resources;
 pub mod runner;
+pub mod timing;

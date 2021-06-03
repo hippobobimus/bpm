@@ -1,24 +1,23 @@
 use sdl2::{
     image::{InitFlag, LoadTexture},
     pixels::Color,
-    render::{WindowCanvas, Texture, TextureCreator},
-    surface::SurfaceContext,
 };
 use specs::prelude::*;
 
 use std::{
-    time::Duration,
+    time::{Duration},
 };
 
 use crate::{
     animator::Animator,
     constants,
     entities::Spawner,
-    resources::MovementCommandStack,
+    resources::{DeltaTime, MovementCommandStack},
     event_processor,
     keyboard::Keyboard,
     physics::Physics,
     renderer,
+    timing::Timing,
 };
 
 pub fn run() -> Result<(), String> {
@@ -69,10 +68,11 @@ pub fn run() -> Result<(), String> {
 
     // dispatcher 
     let mut dispatcher = DispatcherBuilder::new()
-        .with(Keyboard, "Keyboard", &[])
+        .with(Timing, "Timing", &[])
+        .with(Keyboard, "Keyboard", &["Timing"])
         // depend on keyboard setting velocity before position and animation
-        .with(Physics, "Physics", &["Keyboard"])
-        .with(Animator, "Animator", &["Keyboard"])
+        .with(Physics, "Physics", &["Keyboard", "Timing"])
+        .with(Animator, "Animator", &["Keyboard", "Timing"])
         .build();
 
     dispatcher.setup(&mut world);
@@ -82,7 +82,11 @@ pub fn run() -> Result<(), String> {
 
     // initialise resources
     let movement_command_queue: MovementCommandStack = MovementCommandStack::new();
+    //let delta_time = DeltaTime(Duration::new(0, constants::TIMESTEP_NS));
+    let delta_time = DeltaTime::new();
+
     world.insert(movement_command_queue);
+    world.insert(delta_time);
 
     // entities
     let mut spawner = Spawner::new(&mut world);
@@ -110,7 +114,7 @@ pub fn run() -> Result<(), String> {
         // Render
         renderer::render(&mut canvas, background_colour, &textures, world.system_data())?;
 
-        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 * constants::TIME_STEP as u32));
+        //::std::thread::sleep(Duration::new(0, constants::TIMESTEP_NS as u32)); // TODO update
     }
 
     Ok(())

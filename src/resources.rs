@@ -1,6 +1,6 @@
-use std::collections::{
-    HashSet,
-    VecDeque,
+use std::{
+    collections::{HashSet, VecDeque},
+    time::{Duration, Instant},
 };
 
 use crate::direction::Direction;
@@ -58,5 +58,28 @@ impl MovementCommandStack {
     /// Removes any MoveCommands in the given Direction from the stack.
     pub fn remove(&mut self, dir: Direction) {
         self.active.remove(&dir);
+    }
+}
+
+pub struct DeltaTime {
+    dt: Duration,
+    instant: Instant,
+}
+
+impl DeltaTime {
+    pub fn new() -> Self {
+        Self {
+            dt: Duration::new(0, 0),
+            instant: Instant::now(),
+        }
+    }
+
+    pub fn get_dt(&self) -> &Duration {
+        &self.dt
+    }
+
+    pub fn update_dt(&mut self) {
+        self.dt = self.instant.elapsed();
+        self.instant = Instant::now();
     }
 }

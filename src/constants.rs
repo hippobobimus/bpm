@@ -2,7 +2,7 @@ use lazy_static::lazy_static;
 use sdl2::rect::Rect;
 
 // Game loop
-pub static TIME_STEP: f64 = 1.0 / 20.0;
+pub static TIMESTEP_NS: u32 = 1_000_000_000 / 20; // 20 Hz
 
 // Physics
 pub static LOW_VELOCITY_THRESHOLD: f64 = 5.0;

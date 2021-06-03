@@ -3,6 +3,7 @@ use specs::prelude::*;
 use crate::{
     components::*,
     constants,
+    resources::*,
 };
 
 #[derive(SystemData)]
@@ -12,6 +13,7 @@ pub struct PhysicsData<'a> {
     velocity: WriteStorage<'a, Velocity>,
     propulsion: ReadStorage<'a, Propulsion>,
     resistance: WriteStorage<'a, Resistance>,
+    delta_time: ReadExpect<'a, DeltaTime>,
 }
 
 pub struct Physics;
@@ -21,21 +23,20 @@ impl<'a> System<'a> for Physics {
 
     // TODO possible extension: parallel join with rayon
     fn run(&mut self, mut data: Self::SystemData) {
+        let dt_secs = data.delta_time.get_dt().as_secs_f64();
+
         for (mass, pos, vel, prop, res) in (&data.mass, &mut data.position, &mut data.velocity,
                                             &data.propulsion, &mut data.resistance).join() {
-            let dt = constants::TIME_STEP;  // TODO parameterise
-
             // update velocity based on current forces applied.
-            Self::update_velocity(vel, mass, prop, res, dt);
+            Self::update_velocity(vel, mass, prop, res, dt_secs);
 
             // update resistive force based on new velocity.
             Self::update_resistance(res, vel);
 
             // update position based on new velocity.
-            Self::update_position(pos, vel, dt);
+            Self::update_position(pos, vel, dt_secs);
         }
     }
-
 }
 
 impl Physics {
