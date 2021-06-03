@@ -8,6 +8,7 @@ pub mod constants;
 pub mod direction;
 pub mod entities;
 pub mod event_processor;
+pub mod frames_accumulator;
 pub mod keyboard;
 pub mod physics;
 pub mod renderer;

@@ -7,6 +7,7 @@ use specs_derive::Component;
 use crate::{
     constants,
     direction::Direction,
+    frames_accumulator::FramesAccumulator,
 };
 
 // Marker components
@@ -62,8 +63,8 @@ pub struct Sprite {
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
 pub struct MovementAnimation {
-    pub ticks: i32,
     pub current_frame: usize,
+    pub frames_accum: FramesAccumulator,
     pub left_frames: Vec<Sprite>,
     pub right_frames: Vec<Sprite>,
     pub up_frames: Vec<Sprite>,
@@ -74,8 +75,8 @@ impl MovementAnimation {
     /// Generates movement animation frames from a given spritesheet and initial sprite frame.
     pub fn new(spritesheet: usize, initial_frame: Rect) -> Self {
         MovementAnimation {
-            ticks: 0,
             current_frame: 0,
+            frames_accum: FramesAccumulator::new(constants::SPRITE_ANIMATION_FPS),
             left_frames: Self::animation_frames(spritesheet, initial_frame, Direction::Left),
             right_frames: Self::animation_frames(spritesheet, initial_frame, Direction::Right),
             up_frames: Self::animation_frames(spritesheet, initial_frame, Direction::Up),
@@ -94,7 +95,7 @@ impl MovementAnimation {
         // Different columns in spritesheet represent different directions of travel.
         let x_offset = Self::spritesheet_col(direction) * frame_width as i32;
 
-        for i in 0..constants::FRAMES_PER_ANIMATION {
+        for i in 0..constants::FRAMES_PER_ANIMATION_CYCLE {
             // advance by one frame in the animation on each loop.
             let y_offset = frame_height as i32 * Self::spritesheet_row(i);
 

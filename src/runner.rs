@@ -4,13 +4,8 @@ use sdl2::{
 };
 use specs::prelude::*;
 
-use std::{
-    time::{Duration},
-};
-
 use crate::{
     animator::Animator,
-    constants,
     entities::Spawner,
     resources::{DeltaTime, MovementCommandStack},
     event_processor,
@@ -82,7 +77,6 @@ pub fn run() -> Result<(), String> {
 
     // initialise resources
     let movement_command_queue: MovementCommandStack = MovementCommandStack::new();
-    //let delta_time = DeltaTime(Duration::new(0, constants::TIMESTEP_NS));
     let delta_time = DeltaTime::new();
 
     world.insert(movement_command_queue);
@@ -113,8 +107,6 @@ pub fn run() -> Result<(), String> {
 
         // Render
         renderer::render(&mut canvas, background_colour, &textures, world.system_data())?;
-
-        //::std::thread::sleep(Duration::new(0, constants::TIMESTEP_NS as u32)); // TODO update
     }
 
     Ok(())
