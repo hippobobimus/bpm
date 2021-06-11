@@ -6,11 +6,13 @@ use specs::prelude::*;
 
 use crate::{
     animator::Animator,
+    collisions::CollisionSys,
     entities::Spawner,
     resources::{DeltaTime, MovementCommandStack},
     event_processor,
     keyboard::Keyboard,
     physics::Physics,
+    //physics::CollisionDetection,
     renderer,
     timing::Timing,
 };
@@ -65,8 +67,10 @@ pub fn run() -> Result<(), String> {
     let mut dispatcher = DispatcherBuilder::new()
         .with(Timing, "Timing", &[])
         .with(Keyboard, "Keyboard", &["Timing"])
+        .with(CollisionSys::new(), "CollisionDetection", &["Keyboard", "Timing"])
         // depend on keyboard setting velocity before position and animation
         .with(Physics, "Physics", &["Keyboard", "Timing"])
+        //.with(CollisionDetection, "CollisionDetection", &["Keyboard", "Physics", "Timing"])
         .with(Animator, "Animator", &["Keyboard", "Timing"])
         .build();
 
@@ -100,7 +104,7 @@ pub fn run() -> Result<(), String> {
         if exit { break 'running };
 
         // Update
-        i = (i + 1) % 255; // update background color
+        //i = (i + 1) % 255; // update background color
         let background_colour = Color::RGB(i, 64, 255 -i);
         dispatcher.dispatch(&world);
         world.maintain();

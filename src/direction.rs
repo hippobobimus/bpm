@@ -1,3 +1,8 @@
+use nalgebra::{
+    base::Vector2,
+    vector,
+};
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum Direction {
     Left,
@@ -7,21 +12,12 @@ pub enum Direction {
 }
 
 impl Direction {
-    pub fn dx(&self) -> i32 {
+    pub fn unit_vector(&self) -> Vector2<f64> {
         match self {
-            Direction::Left => -1,
-            Direction::Right => 1,
-            Direction::Up => 0,
-            Direction::Down => 0,
-        }
-    }
-
-    pub fn dy(&self) -> i32 {
-        match *self {
-            Direction::Left => 0,
-            Direction::Right =>0,
-            Direction::Up => -1,
-            Direction::Down => 1,
+            Direction::Left => vector![-1.0, 0.0],
+            Direction::Right => vector![1.0, 0.0],
+            Direction::Up => vector![0.0, -1.0],
+            Direction::Down => vector![0.0, 1.0],
         }
     }
 

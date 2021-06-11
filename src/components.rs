@@ -1,3 +1,7 @@
+use nalgebra::{
+    base::Vector2,
+    vector,
+};
 use sdl2::{
     rect::Rect,
 };
@@ -16,41 +20,80 @@ use crate::{
 #[storage(NullStorage)]
 pub struct KeyboardControlled;
 
+//#[derive(Component, Debug, Default)]
+//#[storage(NullStorage)]
+//pub struct PlayerCharacter;
+
 // Standard components
 
+/// Axis-aligned bounding box
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
-pub struct Mass {
-    pub value: f64,
-}
-
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
-pub struct Propulsion {
-    pub x: f64,
-    pub y: f64,
-}
-
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
-pub struct Resistance {
-    pub x: f64,
-    pub y: f64,
+pub struct AABB {
+    pub min: Vector2<f64>,
+    pub max: Vector2<f64>,
 }
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
 pub struct Position {
-    pub x: f64,
-    pub y: f64,
+    pub pos: Vector2<f64>,
+    //pub x: f64,
+    //pub y: f64,
+}
+
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+pub struct Mass {
+    pub value: f64,
+    pub inverse: f64,
+}
+
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+pub struct Forces {
+    pub propulsion: Vector2<f64>,
+    pub drag: Vector2<f64>,
+    pub impact: Vector2<f64>,
+}
+
+impl Forces {
+    pub fn new() -> Self {
+        Self {
+            propulsion: vector![0.0, 0.0],
+            drag: vector![0.0, 0.0],
+            impact: vector![0.0, 0.0],
+        }
+    }
 }
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
 pub struct Velocity {
-    pub x: f64,
-    pub y: f64,
+    pub vel: Vector2<f64>,
+    //pub x: f64,
+    //pub y: f64,
 }
+
+//#[derive(Debug)]
+//pub struct Force {
+//    pub x: f64,
+//    pub y: f64,
+//}
+//
+//#[derive(Component, Debug)]
+//#[storage(VecStorage)]
+//pub struct Propulsion {
+//    pub x: f64,
+//    pub y: f64,
+//}
+//
+//#[derive(Component, Debug)]
+//#[storage(VecStorage)]
+//pub struct Resistance {
+//    pub x: f64,
+//    pub y: f64,
+//}
 
 #[derive(Clone, Component, Debug)]
 #[storage(VecStorage)]

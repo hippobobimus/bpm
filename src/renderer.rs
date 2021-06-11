@@ -23,7 +23,7 @@ pub fn render(canvas: &mut WindowCanvas, background: Color, textures: &[Texture]
         let current_frame = sprite.region;
 
         // Translate float coords to int based SDL point.
-        let raw_pos: Point = Point::new(pos.x as i32, pos.y as i32);
+        let raw_pos: Point = Point::new(pos.pos.x as i32, pos.pos.y as i32);
 
         // Translate coords such that (0,0) is the screen centre. SDL uses top left as (0,0).
         let screen_position = raw_pos + Point::new(width as i32 / 2, height as i32 / 2);

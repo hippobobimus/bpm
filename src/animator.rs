@@ -9,7 +9,7 @@ use crate::{
 pub struct AnimationData<'a> {
     movement_animation: WriteStorage<'a, MovementAnimation>,
     sprite: WriteStorage<'a, Sprite>,
-    propulsion: ReadStorage<'a, Propulsion>,
+    forces: ReadStorage<'a, Forces>,
     delta_time: ReadExpect<'a, DeltaTime>,
 }
 
@@ -22,8 +22,9 @@ impl<'a> System<'a> for Animator {
     fn run(&mut self, mut data: Self::SystemData) {
         let dt = *data.delta_time.get_dt();
 
-        for (anim, sprite, prop) in (&mut data.movement_animation, &mut data.sprite,
-                                     &data.propulsion).join() {
+        for (anim, sprite, f) in (&mut data.movement_animation, &mut data.sprite,
+                                     &data.forces).join() {
+            let prop = f.propulsion;
             // do not progress animation when propulsion force is 0.
             if prop.x == 0.0 && prop.y == 0.0 {
                 continue;
