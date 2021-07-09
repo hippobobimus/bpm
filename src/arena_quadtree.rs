@@ -4,7 +4,7 @@ use nalgebra::{
 };
 
 use crate::{
-    shapes::{self, AABB, Circle, Plane},
+    shapes::{self, Aabb, Circle, Plane},
 };
 
 /// The unique positional index of a node in the QuadTree's arena. Used to retrieve nodes.
@@ -43,14 +43,14 @@ impl ChildQuadrant {
 pub struct Node<T: Copy> {
     idx: usize,
     centre: Vector2<f64>,
-    boundary: AABB,
+    boundary: Aabb,
     data: Vec<T>,
     children: [Option<QTIndex>; 4],
 }
 
 impl<T: Copy> Node<T> {
     /// Creates an empty node with the given index, center position and outer boundary.
-    fn new(idx: usize, centre: Vector2<f64>, boundary: AABB) -> Self {
+    fn new(idx: usize, centre: Vector2<f64>, boundary: Aabb) -> Self {
         Self {
             idx,
             centre,
@@ -108,9 +108,9 @@ impl<T: Copy> QuadTree<T> {
 
     /// Preallocates a quadtree down to the maximum depth, within the given boundary and centred at
     /// the given position.
-    pub fn initialize(&mut self, centre: Vector2<f64>, boundary: AABB) {
+    pub fn initialize(&mut self, centre: Vector2<f64>, boundary: Aabb) {
         // Recursive helper function that builds out the tree down to the given depth.
-        fn helper<T: Copy>(qt: &mut QuadTree<T>, depth: i32, centre: Vector2<f64>, boundary: AABB) -> Option<QTIndex> {
+        fn helper<T: Copy>(qt: &mut QuadTree<T>, depth: i32, centre: Vector2<f64>, boundary: Aabb) -> Option<QTIndex> {
             // Depth limit has been reached.
             if depth < 0 {
                 return None;
@@ -128,7 +128,7 @@ impl<T: Copy> QuadTree<T> {
                 ];
 
                 let child_centre = centre + offset;
-                let child_boundary = AABB::new(boundary.extents().x * 0.5,
+                let child_boundary = Aabb::new(boundary.extents().x * 0.5,
                                                boundary.extents().y * 0.5);
 
                 qt.arena[idx].children[*c as usize] = helper(qt,
@@ -148,6 +148,12 @@ impl<T: Copy> QuadTree<T> {
     /// Returns the index of the root node.
     pub fn get_root_idx(&self) -> QTIndex {
         self.root
+    }
+
+    /// Returns an option; either Some() containing a reference to the root node, or None if there
+    /// is no root node (i.e. the tree has not been initialised).
+    pub fn get_root_node(&self) -> Option<&Node<T>> {
+        self.get_node(self.root)
     }
 
     /// Returns a reference to the node located at the given arena index contained within an
@@ -224,7 +230,7 @@ impl<T: Copy> QuadTree<T> {
             let aabb = node.boundary;
             let aabb_pos = node.centre;
 
-            if shapes::test_intersection_aabb_plane(&aabb, &aabb_pos, plane, &plane_pos) {
+            if shapes::aabb_plane_are_intersecting(&aabb, &aabb_pos, plane, &plane_pos) {
                 // collect data entries.
                 for d in node.data.iter() {
                     result.push(*d);
@@ -345,7 +351,7 @@ mod test {
         let height = 100;
         let min_x = width as f64 * -0.5;
         let min_y = height as f64 * -0.5;
-        let bounding_box = AABB::new(width as f64 * 0.5, height as f64 * 0.5);
+        let bounding_box = Aabb::new(width as f64 * 0.5, height as f64 * 0.5);
         let centre = vector![0.0, 0.0];
 
         let mut qt = QuadTree::new();
@@ -372,7 +378,7 @@ mod test {
     #[test]
     fn test_query_by_plane() {
         // 100.0 x 100.0 bounding box.
-        let bounding_box = AABB::new(50.0, 50.0);
+        let bounding_box = Aabb::new(50.0, 50.0);
         let centre = vector![50.0, 50.0];
 
         let mut qt = QuadTree::new();
@@ -412,7 +418,7 @@ mod test {
     #[test]
     fn test_branch_indexing() {
         // 100.0 x 100.0 bounding box.
-        let bounding_box = AABB::new(50.0, 50.0);
+        let bounding_box = Aabb::new(50.0, 50.0);
         let centre = vector![50.0, 50.0];
 
         let mut qt_1: QuadTree<Index> = QuadTree::new();
@@ -462,7 +468,7 @@ mod test {
         }
 
         // test box with min not at origin: 50 x 50 box
-        let bounding_box = AABB::new(25.0, 25.0);
+        let bounding_box = Aabb::new(25.0, 25.0);
         let centre = vector![75.0, 75.0];
 
         let mut qt_2: QuadTree<Index> = QuadTree::new();
@@ -484,7 +490,7 @@ mod test {
     #[test]
     fn test_quadtree_construction() {
         // 100.0 x 100.0 bounding box.
-        let bounding_box = AABB::new(50.0, 50.0);
+        let bounding_box = Aabb::new(50.0, 50.0);
         let centre = vector![50.0, 50.0];
 
         let mut qt = QuadTree::new();
@@ -532,7 +538,7 @@ mod test {
     #[test]
     fn test_traversal() {
         // 100.0 x 100.0 bounding box.
-        let bounding_box = AABB::new(50.0, 50.0);
+        let bounding_box = Aabb::new(50.0, 50.0);
         let centre = vector![50.0, 50.0];
 
         let mut qt = QuadTree::new();

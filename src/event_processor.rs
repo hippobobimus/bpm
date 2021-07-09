@@ -36,12 +36,14 @@ pub fn process_events(world: &World, event_pump: &mut EventPump) -> bool {
                 return true;
             },
             Event::KeyDown { keycode: Some(k), repeat: false, .. } if MOVEMENT_KEYS_MAP.contains_key(&k) => {
+                println!("key down");
                 let dir = MOVEMENT_KEYS_MAP.get(&k).unwrap(); // already verified contains
 
                 let mut mcs = world.write_resource::<MovementCommandStack>();
                 mcs.add(*dir);
             },
             Event::KeyUp { keycode: Some(k), repeat: false, .. } if MOVEMENT_KEYS_MAP.contains_key(&k) => {
+                println!("key up");
                 let dir = MOVEMENT_KEYS_MAP.get(&k).unwrap();
 
                 let mut mcs = world.write_resource::<MovementCommandStack>();

@@ -4,7 +4,6 @@ use specs::prelude::*;
 use crate::{
     components::*,
     constants,
-    //direction::Direction,
     resources::{MovementCommand, MovementCommandStack},
 };
 
@@ -14,7 +13,6 @@ pub struct Keyboard;
 pub struct KeyboardData<'a> {
     keyboard_controlled: ReadStorage<'a, KeyboardControlled>,
     movement_command_stack: WriteExpect<'a, MovementCommandStack>,
-    //propulsion: WriteStorage<'a, Propulsion>,
     forces: WriteStorage<'a, Forces>,
 }
 

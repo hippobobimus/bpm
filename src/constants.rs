@@ -1,12 +1,21 @@
 use lazy_static::lazy_static;
 use sdl2::rect::Rect;
 
-// Game loop
-//pub static TIMESTEP_NS: u32 = 1_000_000_000 / 20; // 20 Hz
+// Screen canvas area
+pub static SCREEN_WIDTH: u32 = 800;
+pub static SCREEN_HEIGHT: u32 = 600;
+pub static FSCREEN_CENTRE_X: f64 = 0.0;
+pub static FSCREEN_CENTRE_Y: f64 = 0.0;
+pub static FSCREEN_EXTENT_X: f64 = SCREEN_WIDTH as f64 * 0.5;
+pub static FSCREEN_EXTENT_Y: f64 = SCREEN_HEIGHT as f64 * 0.5;
+pub static FMAX_X: f64 = SCREEN_WIDTH as f64 * 0.5;
+pub static FMAX_Y: f64 = SCREEN_HEIGHT as f64 * 0.5;
+pub static FMIN_X: f64 = -FMAX_X;
+pub static FMIN_Y: f64 = -FMAX_Y;
 
 // Physics
 pub static LOW_VELOCITY_THRESHOLD: f64 = 5.0;
-pub static PLAYER_PROPULSION_FORCE: f64 = 100.0;
+pub static PLAYER_PROPULSION_FORCE: f64 = 10_000.0;
 pub static RESISTANCE_COEFFICIENT: f64 = 0.1;
 
 // Animation

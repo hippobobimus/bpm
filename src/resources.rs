@@ -5,6 +5,7 @@ use std::{
 
 use crate::direction::Direction;
 
+#[derive(Debug)]
 pub enum MovementCommand {
     Move(Direction),
     Stop,

@@ -5,15 +5,19 @@ use sdl2::{
 use specs::prelude::*;
 
 use crate::{
-    animator::Animator,
-    collisions::CollisionSys,
-    entities::Spawner,
-    resources::{DeltaTime, MovementCommandStack},
+    //animator::Animator,
+    constants,
+    entities,
     event_processor,
     keyboard::Keyboard,
-    physics::Physics,
-    //physics::CollisionDetection,
+    physics::{
+        collision_detection::CollisionDetectionSys,
+        collision_response::CollisionResponseSys,
+        forces::ForceSys,
+        movement::MovementSys, 
+    },
     renderer,
+    resources::{DeltaTime, MovementCommandStack},
     timing::Timing,
 };
 
@@ -23,7 +27,7 @@ pub fn run() -> Result<(), String> {
     let _image_context = sdl2::image::init(InitFlag::PNG | InitFlag::JPG)?;
 
     let window = video_subsystem
-        .window("DinoScore", 800, 600)
+        .window("Physics Simulation", constants::SCREEN_WIDTH, constants::SCREEN_HEIGHT)
         .position_centered()
         .build()
         .map_err(|e| e.to_string())?;
@@ -67,11 +71,11 @@ pub fn run() -> Result<(), String> {
     let mut dispatcher = DispatcherBuilder::new()
         .with(Timing, "Timing", &[])
         .with(Keyboard, "Keyboard", &["Timing"])
-        .with(CollisionSys::new(), "CollisionDetection", &["Keyboard", "Timing"])
-        // depend on keyboard setting velocity before position and animation
-        .with(Physics, "Physics", &["Keyboard", "Timing"])
-        //.with(CollisionDetection, "CollisionDetection", &["Keyboard", "Physics", "Timing"])
-        .with(Animator, "Animator", &["Keyboard", "Timing"])
+        .with(CollisionDetectionSys::new(), "CollisionDetection", &["Keyboard", "Timing"])
+        .with(ForceSys, "ExternalForces", &["CollisionDetection", "Keyboard", "Timing"])
+        .with(CollisionResponseSys, "CollisionResponse", &["CollisionDetection", "ExternalForces", "Keyboard", "Timing"])
+        .with(MovementSys, "Movement", &["CollisionDetection", "CollisionResponse", "ExternalForces", "Keyboard", "Timing"])
+        //.with(Animator, "Animator", &["Keyboard", "Timing"])
         .build();
 
     dispatcher.setup(&mut world);
@@ -87,16 +91,11 @@ pub fn run() -> Result<(), String> {
     world.insert(delta_time);
 
     // entities
-    let mut spawner = Spawner::new(&mut world);
-    spawner.spawn_player(0, 1.0, 0.0, 0.0);
-
-    for i in 1..24 {
-        spawner.spawn_npc(i, 1.0, 0.0 + 10.0 * i as f64, 0.0);
-    }
+    entities::setup_initial_entities(&mut world);
 
     // game loop
     let mut event_pump = sdl_context.event_pump()?;
-    let mut i = 0;
+    let i = 0;
     let mut exit;
     'running: loop {
         // Event processing
