@@ -1,4 +1,4 @@
-use dinoscore::runner;
+use physicssimulation::runner;
 
 fn main() -> Result<(), String> {
     runner::run()?;

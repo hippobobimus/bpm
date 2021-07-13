@@ -1,3 +1,7 @@
+use nalgebra::{
+    vector,
+    Vector2,
+};
 use lazy_static::lazy_static;
 use sdl2::rect::Rect;
 
@@ -15,8 +19,15 @@ pub static FMIN_Y: f64 = -FMAX_Y;
 
 // Physics
 pub static LOW_VELOCITY_THRESHOLD: f64 = 5.0;
-pub static PLAYER_PROPULSION_FORCE: f64 = 10_000.0;
-pub static RESISTANCE_COEFFICIENT: f64 = 0.1;
+// --Damping
+pub static DAMPING_FACTOR: f64 = 0.999;
+// --Drag
+pub static DEFAULT_K1: f64 = 0.0001;
+pub static DEFAULT_K2: f64 = 0.0001;
+// --Gravity
+pub static DEFAULT_GRAVITY: Vector2<f64> = vector![0.0, 100.0]; // value of 'g'.
+// --Thrust
+pub static DEFAULT_THRUST: f64 = 10_000.0;
 
 // Animation
 pub static SPRITE_ANIMATION_FPS: u32 = 4;

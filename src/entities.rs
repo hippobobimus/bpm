@@ -11,7 +11,7 @@ use crate::{
 };
 
 pub fn setup_initial_entities(world: &mut World) {
-    let circle_qty = 10;
+    let circle_qty = 0;
     let polygon_qty = 0;
 
     let mut spawner = Spawner::new(world);
@@ -43,7 +43,7 @@ pub fn setup_initial_entities(world: &mut World) {
     ];
 
     for _ in 0..polygon_qty {
-        spawner.spawn_polygon(50.0, 50.0, 100.0, vertices);
+        spawner.spawn_polygon(50.0, 50.0, 100.0, vertices.clone());
     }
 }
 
@@ -92,12 +92,16 @@ impl<'a> Spawner<'a> {
         self.world.create_entity()
                   .with(Player)
                   .with(KeyboardControlled)
-                  .with(Position { vector: vector![x_pos, y_pos] })
+                  .with(Position::new(vector![x_pos, y_pos]))
                   // physics
-                  .with(Forces::default())
-                  .with(Mass { value: mass, inverse: 1.0 / mass })
-                  .with(Velocity { vector: vector![0.0, 0.0] })
-                  .with(CircleCollider::new(radius))
+                  .with(Force::default())
+                  .with(Drag::default())
+                  .with(Gravity::default())
+                  .with(Thrust::default())
+                  //.with(Forces::default())
+                  .with(Mass::new(mass))
+                  .with(Velocity::default())
+                  //.with(CircleCollider::new(radius))
                   // rendering
                   .with(RenderableCircle::new(radius))
                   .with(RenderColour::new(0, 255, 0))

@@ -14,7 +14,7 @@ use crate::{
         collision_detection::CollisionDetectionSys,
         collision_response::CollisionResponseSys,
         forces::ForceSys,
-        movement::MovementSys, 
+        integrator::IntegrationSys,
     },
     renderer,
     resources::{DeltaTime, MovementCommandStack},
@@ -71,12 +71,21 @@ pub fn run() -> Result<(), String> {
     let mut dispatcher = DispatcherBuilder::new()
         .with(Timing, "Timing", &[])
         .with(Keyboard, "Keyboard", &["Timing"])
+        .with(ForceSys, "Forces", &["Keyboard", "Timing"])
+        .with(IntegrationSys, "Integrator", &["Forces"])
         .with(CollisionDetectionSys::new(), "CollisionDetection", &["Keyboard", "Timing"])
-        .with(ForceSys, "ExternalForces", &["CollisionDetection", "Keyboard", "Timing"])
-        .with(CollisionResponseSys, "CollisionResponse", &["CollisionDetection", "ExternalForces", "Keyboard", "Timing"])
-        .with(MovementSys, "Movement", &["CollisionDetection", "CollisionResponse", "ExternalForces", "Keyboard", "Timing"])
-        //.with(Animator, "Animator", &["Keyboard", "Timing"])
+        .with(CollisionResponseSys, "CollisionResponse", &["CollisionDetection", "Forces", "Keyboard", "Timing"])
         .build();
+
+//    let mut dispatcher = DispatcherBuilder::new()
+//        .with(Timing, "Timing", &[])
+//        .with(Keyboard, "Keyboard", &["Timing"])
+//        .with(CollisionDetectionSys::new(), "CollisionDetection", &["Keyboard", "Timing"])
+//        .with(ForceSys, "ExternalForces", &["CollisionDetection", "Keyboard", "Timing"])
+//        .with(CollisionResponseSys, "CollisionResponse", &["CollisionDetection", "ExternalForces", "Keyboard", "Timing"])
+//        .with(MovementSys, "Movement", &["CollisionDetection", "CollisionResponse", "ExternalForces", "Keyboard", "Timing"])
+//        //.with(Animator, "Animator", &["Keyboard", "Timing"])
+//        .build();
 
     dispatcher.setup(&mut world);
 
