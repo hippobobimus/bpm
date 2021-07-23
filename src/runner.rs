@@ -10,6 +10,7 @@ use crate::{
     constants,
     entities::SpawnerPlugin,
     keyboard::KeyboardPlugin,
+    physics::PhysicsPlugin,
 };
 
 pub fn run() -> Result<(), String> {
@@ -21,6 +22,7 @@ pub fn run() -> Result<(), String> {
         //.add_plugin(FrameTimeDiagnosticsPlugin::default())
         // --Custom
         .add_plugin(KeyboardPlugin)
+        .add_plugin(PhysicsPlugin)
         .add_plugin(SpawnerPlugin)
 
         // resources

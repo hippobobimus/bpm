@@ -23,13 +23,13 @@ pub static DEFAULT_K1: f64 = 0.0001;
 pub static DEFAULT_K2: f64 = 0.0001;
 // --Gravity
 lazy_static! {
-    pub static ref DEFAULT_GRAVITY: DVec3 = DVec3::new(0.0, -100.0, 0.0); // value of 'g'.
+    pub static ref DEFAULT_GRAVITY: DVec3 = DVec3::new(0.0, -10.0, 0.0); // value of 'g'.
 }
 // Mass
 pub static DEFAULT_MASS: f64 = 10.0;
 pub static DEFAULT_INVERSE_MASS: f64 = 0.1;
 // --Thrust
-pub static DEFAULT_THRUST: f64 = 10_000.0;
+pub static DEFAULT_THRUST: f64 = 200.0;
 
 // Animation
 pub static SPRITE_ANIMATION_FPS: u32 = 4;
