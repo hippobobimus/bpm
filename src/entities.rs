@@ -33,7 +33,10 @@ fn spawn_player(
     })
     .insert(KeyboardControlled)
     .insert(Player)
-    .insert(Thrust::default());
+    .insert_bundle(PhysicsBundle {
+        mass: Mass::new(10.0),
+        ..Default::default()
+    });
 }
 
 // TODO port old code

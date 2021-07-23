@@ -10,7 +10,7 @@ pub mod constants;
 pub mod entities;
 //pub mod event_processor;
 pub mod keyboard;
-//pub mod physics;
+pub mod physics;
 //pub mod renderer;
 //pub mod resources;
 pub mod runner;
