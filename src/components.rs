@@ -5,7 +5,6 @@ use bevy::{
 
 use crate::{
     constants,
-    //direction::Direction,
     //shapes::{Circle, Line, Plane, Polygon},
 };
 
@@ -15,6 +14,145 @@ pub struct KeyboardControlled;
 pub struct Player;
 
 // Physics
+
+pub struct Mass {
+    value: f64,
+    inverse: f64,
+}
+
+impl Mass {
+    pub fn new(value: f64) -> Self {
+        Self {
+            value,
+            inverse: 1.0 / value,
+        }
+    }
+
+    pub fn from_inverse(inverse: f64) -> Self {
+        Self {
+            value: 1.0 / inverse,
+            inverse,
+        }
+    }
+
+    pub fn inverse(&self) -> f64 {
+        self.inverse
+    }
+
+    pub fn is_infinite(&self) -> bool {
+        self.inverse == 0.0
+    }
+
+    pub fn is_normal(&self) -> bool {
+        self.value.is_normal()
+    }
+
+    pub fn value(&self) -> f64 {
+        self.value
+    }
+}
+
+#[derive(Default)]
+pub struct Velocity {
+    vector: DVec3,
+}
+
+
+impl Velocity {
+    pub fn new(vector: DVec3) -> Self {
+        Self { vector }
+    }
+
+    pub fn scale(&mut self, s: f64) {
+        self.vector *= s;
+    }
+
+    pub fn add(&mut self, v: DVec3) {
+        self.vector += v;
+    }
+
+    pub fn vector(&self) -> &DVec3 {
+        &self.vector
+    }
+}
+
+// -- Force Accumulator
+
+#[derive(Debug, Default)]
+pub struct Force {
+    total: DVec3,
+}
+
+impl Force {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn add(&mut self, f: DVec3) {
+        self.total += f;
+    }
+
+    pub fn reset(&mut self) {
+        self.total = DVec3::ZERO;
+    }
+
+    pub fn vector(&self) -> &DVec3 {
+        &self.total
+    }
+}
+
+// -- Force generators
+
+#[derive(Debug)]
+pub struct Drag {
+    k1: f64,
+    k2: f64,
+}
+
+impl Default for Drag {
+    fn default() -> Self {
+        Self {
+            k1: constants::DEFAULT_K1,
+            k2: constants::DEFAULT_K2,
+        }
+    }
+}
+
+impl Drag {
+    pub fn new(k1: f64, k2: f64) -> Self {
+        Self { k1, k2 }
+    }
+
+    pub fn force(&self, velocity: DVec3) -> DVec3 {
+        let v_mag = velocity.length();
+        let coeff = self.k1 * v_mag + self.k2 * v_mag.powi(2);
+
+        -coeff * velocity.normalize_or_zero()
+    }
+}
+
+#[derive(Debug)]
+pub struct Gravity {
+    g: DVec3,
+}
+
+impl Default for Gravity {
+    fn default() -> Self {
+        Self {
+            g: *constants::DEFAULT_GRAVITY,
+        }
+    }
+}
+
+impl Gravity {
+    pub fn new(g: DVec3) -> Self {
+        Self { g }
+    }
+
+    pub fn force(&self, m: f64) -> DVec3 {
+        m * self.g
+    }
+}
 
 pub struct Thrust {
     force: DVec3,
@@ -51,59 +189,8 @@ impl Thrust {
     }
 }
 
-
-
 // TODO port old code
-// #[derive(Component, Debug, Default)]
-//#[storage(NullStorage)]
-//pub struct KeyboardControlled;
-//
-//#[derive(Component, Debug, Default)]
-//#[storage(NullStorage)]
-//pub struct Player;
-
-// Standard components
-
 // Physics
-
-//#[derive(Component, Debug)]
-//#[storage(VecStorage)]
-//pub struct Mass {
-//    pub value: f64,
-//    pub inverse: f64,
-//}
-//
-//impl Mass {
-//    pub fn new(value: f64) -> Self {
-//        Self {
-//            value,
-//            inverse: 1.0 / value,
-//        }
-//    }
-//
-//    pub fn from_inverse(inverse: f64) -> Self {
-//        Self {
-//            value: 1.0 / inverse,
-//            inverse,
-//        }
-//    }
-//
-//    pub fn inverse(&self) -> f64 {
-//        self.inverse
-//    }
-//
-//    pub fn is_infinite(&self) -> bool {
-//        self.inverse == 0.0
-//    }
-//
-//    pub fn is_normal(&self) -> bool {
-//        self.value.is_normal()
-//    }
-//
-//    pub fn value(&self) -> f64 {
-//        self.value
-//    }
-//}
 //
 //#[derive(Component, Debug, Default)]
 //#[storage(VecStorage)]
@@ -122,114 +209,6 @@ impl Thrust {
 //
 //    pub fn vector(&self) -> &Vector2<f64> {
 //        &self.vector
-//    }
-//}
-//
-//#[derive(Component, Debug, Default)]
-//#[storage(VecStorage)]
-//pub struct Velocity {
-//    pub vector: Vector2<f64>,
-//}
-//
-//impl Velocity {
-//    pub fn new(vector: Vector2<f64>) -> Self {
-//        Self { vector }
-//    }
-//
-//    pub fn scale(&mut self, s: f64) {
-//        self.vector * s;
-//    }
-//
-//    pub fn transform(&mut self, t: &Vector2<f64>) {
-//        self.vector += t;
-//    }
-//
-//    pub fn vector(&self) -> &Vector2<f64> {
-//        &self.vector
-//    }
-//}
-//
-//// -- Force Accumulator
-//
-//#[derive(Component, Debug, Default)]
-//#[storage(VecStorage)]
-//pub struct Force {
-//    total: Vector2<f64>,
-//}
-//
-//impl Force {
-//    pub fn new() -> Self {
-//        Self { 
-//            total: Default::default(),
-//        }
-//    }
-//
-//    pub fn add_force(&mut self, f: &Vector2<f64>) {
-//        self.total += f;
-//    }
-//
-//    pub fn reset(&mut self) {
-//        self.total.x = 0.0;
-//        self.total.y = 0.0;
-//    }
-//
-//    pub fn vector(&self) -> &Vector2<f64> {
-//        &self.total
-//    }
-//}
-//
-//// -- Force generators
-//
-//#[derive(Component, Debug)]
-//#[storage(VecStorage)]
-//pub struct Drag {
-//    k1: f64,
-//    k2: f64,
-//}
-//
-//impl Drag {
-//    pub fn new(k1: f64, k2: f64) -> Self {
-//        Self { k1, k2 }
-//    }
-//
-//    pub fn force(&self, v: &Vector2<f64>) -> Vector2<f64> {
-//        let v_mag = v.magnitude();
-//        let coeff = self.k1 * v_mag + self.k2 * v_mag.powi(2);
-//
-//        -coeff * v
-//    }
-//}
-//
-//impl Default for Drag {
-//    fn default() -> Self {
-//        Self {
-//            k1: constants::DEFAULT_K1,
-//            k2: constants::DEFAULT_K2,
-//        }
-//    }
-//}
-//
-//#[derive(Component, Debug)]
-//#[storage(VecStorage)]
-//pub struct Gravity {
-//    g: Vector2<f64>,
-//}
-//
-//impl Default for Gravity {
-//    fn default() -> Self {
-//        Self {
-//            g: constants::DEFAULT_GRAVITY,
-//        }
-//    }
-//}
-//
-//impl Gravity {
-//    pub fn new(g: Vector2<f64>) -> Self {
-//        Self { g }
-//    }
-//
-//    pub fn force(&self, m: f64) -> Vector2<f64> {
-//        m * self.g
 //    }
 //}
 //
@@ -436,7 +415,7 @@ impl Thrust {
 ////    fn animation_frames(spritesheet: usize, initial_frame: Rect, direction: Direction)
 ////                        -> Vec<Sprite> {
 ////        let (frame_width, frame_height) = initial_frame.size();
-////    
+////
 ////        let mut frames = Vec::new();
 ////
 ////        // Different columns in spritesheet represent different directions of travel.
@@ -455,7 +434,7 @@ impl Thrust {
 ////
 ////            frames.push(Sprite { spritesheet, region, flip_horizontal });
 ////        }
-////    
+////
 ////        frames
 ////    }
 ////

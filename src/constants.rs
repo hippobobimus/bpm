@@ -1,7 +1,4 @@
-use nalgebra::{
-    vector,
-    Vector2,
-};
+use bevy::math::DVec3;
 use lazy_static::lazy_static;
 use sdl2::rect::Rect;
 
@@ -25,7 +22,9 @@ pub static DAMPING_FACTOR: f64 = 0.999;
 pub static DEFAULT_K1: f64 = 0.0001;
 pub static DEFAULT_K2: f64 = 0.0001;
 // --Gravity
-pub static DEFAULT_GRAVITY: Vector2<f64> = vector![0.0, 100.0]; // value of 'g'.
+lazy_static! {
+    pub static ref DEFAULT_GRAVITY: DVec3 = DVec3::new(0.0, -100.0, 0.0); // value of 'g'.
+}
 // --Thrust
 pub static DEFAULT_THRUST: f64 = 10_000.0;
 
