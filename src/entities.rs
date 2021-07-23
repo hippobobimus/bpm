@@ -1,23 +1,24 @@
 use bevy::prelude::*;
-use rand::prelude::*;
+//use rand::prelude::*;
 
 use crate::{
     components::*,
-    constants,
+    //constants,
 };
 
 // Plugin
+
 pub struct SpawnerPlugin;
 
 impl Plugin for SpawnerPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_startup_system(spawn_sphere.system());
+        app.add_startup_system(spawn_player.system());
     }
 }
 
-
 // Systems
-fn spawn_sphere(
+
+fn spawn_player(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -29,10 +30,13 @@ fn spawn_sphere(
         material: materials.add(Color::rgb(1.0, 0.0, 0.0).into()),
         transform: Transform::from_xyz(0.0, radius, 0.0),
         ..Default::default()
-    });
+    })
+    .insert(KeyboardControlled)
+    .insert(Player)
+    .insert(Thrust::default());
 }
 
-
+// TODO port old code
 //pub fn setup_initial_entities(world: &mut World) {
 //    let circle_qty = 0;
 //    let polygon_qty = 0;

@@ -1,37 +1,65 @@
-use specs::prelude::*;
+use bevy::{
+    prelude::*,
+    app::AppExit,
+    math::DVec3,
+};
+use lazy_static::lazy_static;
+
+use std::{
+    collections::HashMap,
+};
 
 use crate::{
     components::*,
-    resources::{MovementCommand, MovementCommandStack},
 };
 
-pub struct Keyboard;
-
-#[derive(SystemData)]
-pub struct KeyboardData<'a> {
-    keyboard_controlled: ReadStorage<'a, KeyboardControlled>,
-    movement_command_stack: WriteExpect<'a, MovementCommandStack>,
-    thrust: WriteStorage<'a, Thrust>,
+// A mapping that associates keycodes to the cardinal movement directions.
+lazy_static! {
+    static ref MOVEMENT_KEYS_MAP: HashMap<KeyCode, DVec3> = {
+        let mut map = HashMap::new();
+        map.insert(KeyCode::Left, -DVec3::X);
+        map.insert(KeyCode::Right, DVec3::X);
+        map.insert(KeyCode::Up, -DVec3::Z);
+        map.insert(KeyCode::Down, DVec3::Z);
+        map.insert(KeyCode::Space, DVec3::Y);
+        map
+    };
 }
 
-impl<'a> System<'a> for Keyboard {
-    type SystemData = KeyboardData<'a>;
+// Plugins
 
-    // TODO possible extension: parallel join with rayon
-    fn run(&mut self, mut data: Self::SystemData) {
-        let movement_command = data.movement_command_stack.get_next();
+pub struct KeyboardPlugin;
 
-        for (_, thrust) in (&data.keyboard_controlled, &mut data.thrust).join() {
-            match movement_command {
-                MovementCommand::Move(dir) => {
-                    //f.propulsion = dir.unit_vector() * constants::PLAYER_PROPULSION_FORCE;
-                    thrust.engage(&dir);
-                },
-                MovementCommand::Stop => {
-                    //f.propulsion = vector![0.0, 0.0];
-                    thrust.disengage();
-                },
-            }
+impl Plugin for KeyboardPlugin {
+    fn build(&self, app: &mut AppBuilder) {
+        app.add_system(movement.system())
+            .add_system(exit.system());
+    }
+}
+
+// Systems
+
+fn movement(
+    keys: Res<Input<KeyCode>>,
+    mut query: Query<(&KeyboardControlled, &Player, &mut Thrust)>,
+) {
+    for (key_code, dir) in MOVEMENT_KEYS_MAP.iter() {
+        if keys.just_pressed(*key_code) {
+            let (_kb, _player, mut thrust) = query.single_mut()
+                .expect("There should only be one player!");
+
+            thrust.engage(dir);
+        } else if keys.just_released(*key_code) {
+            let (_kb, _player, mut thrust) = query.single_mut()
+                .expect("There should only be one player!");
+
+            thrust.disengage(dir);
         }
+    }
+}
+
+fn exit(keys: Res<Input<KeyCode>>, mut exit: EventWriter<AppExit>) {
+    if keys.just_pressed(KeyCode::Escape) {
+        exit.send(AppExit);
     }
 }
