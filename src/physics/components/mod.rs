@@ -6,6 +6,7 @@ pub mod inertia;
 pub mod mass;
 pub mod phys_transform;
 pub mod thrust;
+pub mod torque;
 pub mod velocity;
 
 pub use angular_velocity::AngularVelocity;
@@ -16,4 +17,5 @@ pub use inertia::InertiaTensor;
 pub use mass::Mass;
 pub use phys_transform::PhysTransform;
 pub use thrust::Thrust;
+pub use torque::Torque;
 pub use velocity::Velocity;
