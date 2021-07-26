@@ -1,10 +1,20 @@
-//pub mod collision_detection;
-//pub mod collision_response;
-pub mod forces;
-pub mod integrator;
-//pub mod movement;
-
-pub mod plugin;
+pub mod components;
+pub mod entity;
+pub mod systems;
 
 // Re-exports
-pub use plugin::PhysicsPlugin;
+pub use components::{Drag, Force, Gravity, Mass, Thrust, Velocity};
+pub use entity::PhysicsBundle;
+
+use bevy::prelude::*;
+
+use systems::{forces, integrator};
+
+pub struct PhysicsPlugin;
+
+impl Plugin for PhysicsPlugin {
+    fn build(&self, app: &mut AppBuilder) {
+        app.add_system(forces::force_accumulation.system())
+            .add_system(integrator::integrator.system());
+    }
+}

@@ -7,7 +7,7 @@ pub mod arena_quadtree;
 pub mod components;
 pub mod constants;
 //pub mod direction;
-pub mod entities;
+pub mod spawner;
 //pub mod event_processor;
 pub mod keyboard;
 pub mod physics;

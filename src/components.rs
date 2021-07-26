@@ -1,12 +1,12 @@
-use bevy::{
-    prelude::*,
-    math::DVec3,
-};
-
-use crate::{
-    constants,
-    //shapes::{Circle, Line, Plane, Polygon},
-};
+//use bevy::{
+//    prelude::*,
+//    math::{DMat3, DMat4, DQuat, DVec3},
+//};
+//
+//use crate::{
+//    constants,
+//    //shapes::{Circle, Line, Plane, Polygon},
+//};
 
 // Marker components
 
@@ -15,198 +15,238 @@ pub struct Player;
 
 // Physics
 
-#[derive(Bundle, Default)]
-pub struct PhysicsBundle {
-    pub mass: Mass,
-    pub velocity: Velocity,
-    pub force: Force,
-    pub drag: Drag,
-    pub gravity: Gravity,
-    pub thrust: Thrust,
-}
-
-pub struct Mass {
-    value: f64,
-    inverse: f64,
-}
-
-impl Default for Mass {
-    fn default() -> Self {
-        Self {
-            value: constants::DEFAULT_MASS,
-            inverse: constants::DEFAULT_INVERSE_MASS,
-        }
-    }
-}
-
-impl Mass {
-    pub fn new(value: f64) -> Self {
-        Self {
-            value,
-            inverse: 1.0 / value,
-        }
-    }
-
-    pub fn from_inverse(inverse: f64) -> Self {
-        Self {
-            value: 1.0 / inverse,
-            inverse,
-        }
-    }
-
-    pub fn inverse(&self) -> f64 {
-        self.inverse
-    }
-
-    pub fn is_infinite(&self) -> bool {
-        self.inverse == 0.0
-    }
-
-    pub fn is_normal(&self) -> bool {
-        self.value.is_normal()
-    }
-
-    pub fn value(&self) -> f64 {
-        self.value
-    }
-}
-
-#[derive(Default)]
-pub struct Velocity {
-    vector: DVec3,
-}
-
-
-impl Velocity {
-    pub fn new(vector: DVec3) -> Self {
-        Self { vector }
-    }
-
-    pub fn scale(&mut self, s: f64) {
-        self.vector *= s;
-    }
-
-    pub fn add(&mut self, v: DVec3) {
-        self.vector += v;
-    }
-
-    pub fn vector(&self) -> &DVec3 {
-        &self.vector
-    }
-}
-
-// -- Force Accumulator
-
-#[derive(Debug, Default)]
-pub struct Force {
-    total: DVec3,
-}
-
-impl Force {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn add(&mut self, f: DVec3) {
-        self.total += f;
-    }
-
-    pub fn reset(&mut self) {
-        self.total = DVec3::ZERO;
-    }
-
-    pub fn vector(&self) -> &DVec3 {
-        &self.total
-    }
-}
-
-// -- Force generators
-
-#[derive(Debug)]
-pub struct Drag {
-    k1: f64,
-    k2: f64,
-}
-
-impl Default for Drag {
-    fn default() -> Self {
-        Self {
-            k1: constants::DEFAULT_K1,
-            k2: constants::DEFAULT_K2,
-        }
-    }
-}
-
-impl Drag {
-    pub fn new(k1: f64, k2: f64) -> Self {
-        Self { k1, k2 }
-    }
-
-    pub fn force(&self, velocity: DVec3) -> DVec3 {
-        let v_mag = velocity.length();
-        let coeff = self.k1 * v_mag + self.k2 * v_mag.powi(2);
-
-        -coeff * velocity.normalize_or_zero()
-    }
-}
-
-#[derive(Debug)]
-pub struct Gravity {
-    g: DVec3,
-}
-
-impl Default for Gravity {
-    fn default() -> Self {
-        Self {
-            g: *constants::DEFAULT_GRAVITY,
-        }
-    }
-}
-
-impl Gravity {
-    pub fn new(g: DVec3) -> Self {
-        Self { g }
-    }
-
-    pub fn force(&self, m: f64) -> DVec3 {
-        m * self.g
-    }
-}
-
-pub struct Thrust {
-    force: DVec3,
-    magnitude: f64,
-}
-
-impl Default for Thrust {
-    fn default() -> Self {
-        Self {
-            force: Default::default(),
-            magnitude: constants::DEFAULT_THRUST,
-        }
-    }
-}
-
-impl Thrust {
-    pub fn new(magnitude: f64) -> Self {
-        Self {
-            force: Default::default(),
-            magnitude,
-        }
-    }
-
-    pub fn disengage(&mut self, dir: &DVec3) {
-        self.force -= self.magnitude * dir.normalize();
-    }
-
-    pub fn engage(&mut self, dir: &DVec3) {
-        self.force += self.magnitude * dir.normalize();
-    }
-
-    pub fn force(&self) -> &DVec3 {
-        &self.force
-    }
-}
+//#[derive(Bundle, Default)]
+//pub struct PhysicsBundle {
+//    pub mass: Mass,
+//    pub velocity: Velocity,
+//    pub force: Force,
+//    pub drag: Drag,
+//    pub gravity: Gravity,
+//    pub thrust: Thrust,
+//}
+//
+//pub struct InertiaTensor {
+//    tensor: DMat3,
+//    inverse: DMat3,
+//}
+//
+//impl InertiaTensor {
+//    pub fn new(inertia_tensor: DMat3) -> Self {
+//        Self {
+//            tensor: inertia_tensor,
+//            inverse: inertia_tensor.inverse(),
+//        }
+//    }
+//
+//    pub fn tensor(&self) -> &DMat3 {
+//        &self.tensor
+//    }
+//
+//    pub fn inverse(&self) -> &DMat3 {
+//        &self.inverse
+//    }
+//}
+//
+//pub struct Mass {
+//    value: f64,
+//    inverse: f64,
+//}
+//
+//impl Default for Mass {
+//    fn default() -> Self {
+//        Self {
+//            value: constants::DEFAULT_MASS,
+//            inverse: constants::DEFAULT_INVERSE_MASS,
+//        }
+//    }
+//}
+//
+//impl Mass {
+//    pub fn new(value: f64) -> Self {
+//        Self {
+//            value,
+//            inverse: 1.0 / value,
+//        }
+//    }
+//
+//    pub fn from_inverse(inverse: f64) -> Self {
+//        Self {
+//            value: 1.0 / inverse,
+//            inverse,
+//        }
+//    }
+//
+//    pub fn inverse(&self) -> f64 {
+//        self.inverse
+//    }
+//
+//    pub fn is_infinite(&self) -> bool {
+//        self.inverse == 0.0
+//    }
+//
+//    pub fn is_normal(&self) -> bool {
+//        self.value.is_normal()
+//    }
+//
+//    pub fn value(&self) -> f64 {
+//        self.value
+//    }
+//}
+//
+//#[derive(Default)]
+//pub struct AngularVelocity {
+//    vector: DVec3,
+//}
+//
+//impl AngularVelocity {
+//    pub fn new(vector: DVec3) -> Self {
+//        Self { vector }
+//    }
+//
+//    pub fn vector(&self) -> &DVec3 {
+//        &self.vector
+//    }
+//}
+//
+//#[derive(Default)]
+//pub struct Velocity {
+//    vector: DVec3,
+//}
+//
+//impl Velocity {
+//    pub fn new(vector: DVec3) -> Self {
+//        Self { vector }
+//    }
+//
+//    pub fn scale(&mut self, s: f64) {
+//        self.vector *= s;
+//    }
+//
+//    pub fn add(&mut self, v: DVec3) {
+//        self.vector += v;
+//    }
+//
+//    pub fn vector(&self) -> &DVec3 {
+//        &self.vector
+//    }
+//
+//    pub fn zero(&mut self) {
+//        self.vector = DVec3::ZERO;
+//    }
+//}
+//
+//// -- Force Accumulator
+//
+//#[derive(Debug, Default)]
+//pub struct Force {
+//    total: DVec3,
+//}
+//
+//impl Force {
+//    pub fn new() -> Self {
+//        Self::default()
+//    }
+//
+//    pub fn add(&mut self, f: DVec3) {
+//        self.total += f;
+//    }
+//
+//    pub fn reset(&mut self) {
+//        self.total = DVec3::ZERO;
+//    }
+//
+//    pub fn vector(&self) -> &DVec3 {
+//        &self.total
+//    }
+//}
+//
+//// -- Force generators
+//
+//#[derive(Debug)]
+//pub struct Drag {
+//    k1: f64,
+//    k2: f64,
+//}
+//
+//impl Default for Drag {
+//    fn default() -> Self {
+//        Self {
+//            k1: constants::DEFAULT_K1,
+//            k2: constants::DEFAULT_K2,
+//        }
+//    }
+//}
+//
+//impl Drag {
+//    pub fn new(k1: f64, k2: f64) -> Self {
+//        Self { k1, k2 }
+//    }
+//
+//    pub fn force(&self, velocity: DVec3) -> DVec3 {
+//        let v_mag = velocity.length();
+//        let coeff = self.k1 * v_mag + self.k2 * v_mag.powi(2);
+//
+//        -coeff * velocity.normalize_or_zero()
+//    }
+//}
+//
+//#[derive(Debug)]
+//pub struct Gravity {
+//    g: DVec3,
+//}
+//
+//impl Default for Gravity {
+//    fn default() -> Self {
+//        Self {
+//            g: *constants::DEFAULT_GRAVITY,
+//        }
+//    }
+//}
+//
+//impl Gravity {
+//    pub fn new(g: DVec3) -> Self {
+//        Self { g }
+//    }
+//
+//    pub fn force(&self, m: f64) -> DVec3 {
+//        m * self.g
+//    }
+//}
+//
+//pub struct Thrust {
+//    force: DVec3,
+//    magnitude: f64,
+//}
+//
+//impl Default for Thrust {
+//    fn default() -> Self {
+//        Self {
+//            force: Default::default(),
+//            magnitude: constants::DEFAULT_THRUST,
+//        }
+//    }
+//}
+//
+//impl Thrust {
+//    pub fn new(magnitude: f64) -> Self {
+//        Self {
+//            force: Default::default(),
+//            magnitude,
+//        }
+//    }
+//
+//    pub fn disengage(&mut self, dir: &DVec3) {
+//        self.force -= self.magnitude * dir.normalize();
+//    }
+//
+//    pub fn engage(&mut self, dir: &DVec3) {
+//        self.force += self.magnitude * dir.normalize();
+//    }
+//
+//    pub fn force(&self) -> &DVec3 {
+//        &self.force
+//    }
+//}
 
 // TODO port old code
 // Physics

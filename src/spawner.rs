@@ -3,6 +3,7 @@ use bevy::prelude::*;
 
 use crate::{
     components::*,
+    physics::{Mass, PhysicsBundle},
     //constants,
 };
 

@@ -8,7 +8,7 @@ use bevy::{
 
 use crate::{
     constants,
-    entities::SpawnerPlugin,
+    spawner::SpawnerPlugin,
     keyboard::KeyboardPlugin,
     physics::PhysicsPlugin,
 };
@@ -69,8 +69,9 @@ fn setup(
 
     // Light
     commands.spawn_bundle(LightBundle {
-        transform: Transform::from_translation(Vec3::new(0.0, 15.0, 0.0)),
+        transform: Transform::from_translation(Vec3::new(0.0, 60.0, 0.0)),
         light: Light {
+            intensity: 10_000.0,
             range: 150.0,
             ..Default::default()
         },

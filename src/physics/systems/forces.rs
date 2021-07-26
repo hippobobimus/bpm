@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    components::*,
+    physics::{Drag, Force, Gravity, Mass, Thrust, Velocity},
 };
 
 pub fn force_accumulation(

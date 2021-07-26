@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
 use crate::{
-    components::*,
     constants,
+    physics::{Force, Mass, Velocity},
 };
 
 pub fn integrator(
@@ -30,6 +30,11 @@ pub fn integrator(
 
         // Apply damping.
         v.scale(constants::DAMPING_FACTOR.powf(dt_secs));
+
+        // If velocity is very low, make it 0
+        if v.vector().length_squared() < constants::LOW_VELOCITY_THRESHOLD {
+            v.zero();
+        }
 
         // TODO reset forces here?
     }

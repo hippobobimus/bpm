@@ -11,6 +11,7 @@ use std::{
 
 use crate::{
     components::*,
+    physics::Thrust,
 };
 
 // A mapping that associates keycodes to the cardinal movement directions.
