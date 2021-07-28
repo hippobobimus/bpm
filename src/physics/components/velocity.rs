@@ -10,12 +10,12 @@ impl Velocity {
         Self { vector }
     }
 
-    pub fn scale(&mut self, s: f64) {
-        self.vector *= s;
-    }
-
     pub fn add(&mut self, v: DVec3) {
         self.vector += v;
+    }
+
+    pub fn scale(&mut self, s: f64) {
+        self.vector *= s;
     }
 
     pub fn vector(&self) -> &DVec3 {

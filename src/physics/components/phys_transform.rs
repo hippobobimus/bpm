@@ -5,13 +5,15 @@ use bevy::{
 /// Duplication of the built-in Bevy Transform component with a higher precision, for use
 /// internally within the physics engine's calculations.
 pub struct PhysTransform {
-    rotation: DQuat,
-    translation: DVec3,
+    pub rotation: DQuat,
+    pub translation: DVec3,
     // cache transform matrix to save re-calculating unnecessarily
     matrix: DMat4,
 }
 
 impl PhysTransform {
+    //TODO normalize rotation Quaternion?
+
     pub fn from_xyz(x: f64, y: f64, z: f64) -> Self {
         Self::from_translation(DVec3::new(x, y, z))
     }

@@ -3,7 +3,7 @@ use bevy::prelude::*;
 
 use crate::{
     components::*,
-    physics::{Mass, PhysicsBundle},
+    physics::prelude::*,
     //constants,
 };
 
@@ -13,7 +13,8 @@ pub struct SpawnerPlugin;
 
 impl Plugin for SpawnerPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_startup_system(spawn_player.system());
+        app.add_startup_system(spawn_player.system())
+            .add_startup_system(spawn_fan.system());
     }
 }
 
@@ -24,7 +25,9 @@ fn spawn_player(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    let mass = 10.0;
     let radius = 1.0;
+    let radius_f64 = 1.0_f64;
 
     commands.spawn_bundle(PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Icosphere { radius, subdivisions: 10 })),
@@ -35,9 +38,34 @@ fn spawn_player(
     .insert(KeyboardControlled)
     .insert(Player)
     .insert_bundle(PhysicsBundle {
-        mass: Mass::new(10.0),
+        inertia_tensor: InertiaTensor::sphere(mass, radius_f64),
+        mass: Mass::new(mass),
+        transform: PhysTransform::from_xyz(0.0, radius_f64, 0.0),
         ..Default::default()
     });
+}
+
+fn spawn_fan(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    let mass = 20.0;
+
+    commands.spawn_bundle(PbrBundle {
+        mesh: meshes.add(Mesh::from(shape::Box::new(1.0, 10.0, 0.1))),
+        material: materials.add(Color::rgb(0.0, 0.0, 1.0).into()),
+        transform: Transform::from_xyz(0.0, 10.0, -10.0),
+        ..Default::default()
+    })
+    .insert_bundle(PhysicsBundle {
+        inertia_tensor: InertiaTensor::cuboid(mass, 1.0, 10.0, 0.1),
+        mass: Mass::new(mass),
+        transform: PhysTransform::from_xyz(0.0, 10.0, -10.0),
+        ..Default::default()
+    });
+    // TODO add torque generator
+    //.insert(Rotator::new());
 }
 
 // TODO port old code

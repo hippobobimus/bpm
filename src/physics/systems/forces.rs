@@ -1,20 +1,26 @@
-use bevy::prelude::*;
-
-use crate::{
-    physics::{Drag, Force, Gravity, Mass, Thrust, Velocity},
+use bevy::{
+    prelude::*,
+    math::DVec3,
 };
 
+use crate::{
+    physics::{Drag, Force, Gravity, Mass, Thrust, Torque, Velocity},
+};
+
+/// A system that calculates and accumulates various forces and associated torques applied on a
+/// body.
 pub fn force_accumulation(
     mut q: QuerySet<(
-        Query<&mut Force>,
+        Query<(&mut Force, &mut Torque)>,
         Query<(&Drag, &mut Force, &Velocity)>,
         Query<(&Gravity, &mut Force, &Mass)>,
         Query<(&Thrust, &mut Force)>,
     )>,
 ) {
-    // Zero currently applied forces.
-    for mut f in q.q0_mut().iter_mut() {
+    // Zero the force and torque accumulators.
+    for (mut f, mut tq) in q.q0_mut().iter_mut() {
         f.reset();
+        tq.reset();
     }
 
     // Apply force generators.
@@ -29,44 +35,42 @@ pub fn force_accumulation(
     for (thrust, mut f) in q.q3_mut().iter_mut() {
         f.add(*thrust.force());
     }
+
+    // TODO apply torques
 }
 
-//#[derive(SystemData)]
-//pub struct ForceSysData<'a> {
-//    drag: ReadStorage<'a, Drag>,
-//    force: WriteStorage<'a, Force>,
-//    gravity: ReadStorage<'a, Gravity>,
-//    mass: ReadStorage<'a, Mass>,
-//    thrust: ReadStorage<'a, Thrust>,
-//    velocity: WriteStorage<'a, Velocity>,
-//}
-//
-///// Updates the force accumulator of each entity with all force generators assigned to the entity.
-//pub struct ForceSys;
-//
-//impl<'a> System<'a> for ForceSys {
-//    type SystemData = ForceSysData<'a>;
-//
-//    // TODO possible extension: parallel join with rayon
-//    fn run(&mut self, mut data: Self::SystemData) {
-//        //let dt_secs = data.delta_time.get_dt().as_secs_f64();
-//
-//        // Zero currently applied forces.
-//        for f in (&mut data.force).join() {
-//            f.reset();
-//        }
-//
-//        // Apply force generators.
-//        for (drag, v, f) in (&data.drag, &data.velocity, &mut data.force).join() {
-//            f.add_force(&drag.force(&v.vector));
-//        }
-//        for (gravity, m, f) in (&data.gravity, &data.mass, &mut data.force).join() {
-//            // ensure the mass is not 0 or infinite (or subnormal/NaN).
-//            if !m.is_normal() { break };
-//            f.add_force(&gravity.force(m.value()));
-//        }
-//        for (thrust, f) in (&data.thrust, &mut data.force).join() {
-//            f.add_force(&thrust.force());
-//        }
-//    }
-//}
+/// Updates the force accumulator based on a given force with a direction that intersects the
+/// centre of mass of the body (i.e. no torques are generated).
+fn add_force(
+    force: DVec3,
+    force_accum: &mut Force,
+) {
+    force_accum.add(force);
+}
+
+/// Updates the force and torque accumulators based on a given force applied at a given point
+/// relative to the body's centre of mass.
+fn add_force_at_body_point(
+    force: DVec3,
+    point: DVec3,
+    force_accum: &mut Force,
+    torque_accum: &mut Torque
+) {
+    force_accum.add(force);
+    torque_accum.add(point.cross(force));
+}
+
+/// Updates the force and torque accumulators based on a given force applied at a given point
+/// in global coordinates.
+fn add_force_at_point(
+    centre_of_mass_position: DVec3,
+    force: DVec3,
+    mut point: DVec3,
+    force_accum: &mut Force,
+    torque_accum: &mut Torque
+) {
+    // convert point to body coords relative to centre of mass.
+    point -= centre_of_mass_position;
+
+    add_force_at_body_point(force, point, force_accum, torque_accum);
+}
