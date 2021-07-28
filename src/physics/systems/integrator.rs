@@ -43,7 +43,8 @@ pub fn integrator(
         ang_v.scale(constants::ANGULAR_DAMPING_FACTOR.powf(dt_secs));
 
         // Update internal physics module rotation and translation.
-        transform.rotation = transform.rotation + ang_v.quaternion() * transform.rotation * dt_secs * 0.5;
+        transform.rotation = (transform.rotation + ang_v.quaternion() * transform.rotation * dt_secs * 0.5)
+            .normalize();
         transform.translation += *v.vector() * dt_secs;
 
         // Update bevy transform based on physics module's transform.

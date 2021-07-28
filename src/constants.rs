@@ -18,7 +18,7 @@ pub static FMIN_Y: f64 = -FMAX_Y;
 pub static LOW_VELOCITY_THRESHOLD: f64 = 1.0;
 // --Damping
 pub static DAMPING_FACTOR: f64 = 0.999;
-pub static ANGULAR_DAMPING_FACTOR: f64 = 0.999;
+pub static ANGULAR_DAMPING_FACTOR: f64 = 0.9;
 // --Drag
 pub static DEFAULT_K1: f64 = 5.0;
 pub static DEFAULT_K2: f64 = 5.0;

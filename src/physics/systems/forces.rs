@@ -4,39 +4,58 @@ use bevy::{
 };
 
 use crate::{
-    physics::{Drag, Force, Gravity, Mass, Thrust, Torque, Velocity},
+    physics::prelude::*,
 };
 
 /// A system that calculates and accumulates various forces and associated torques applied on a
 /// body.
 pub fn force_accumulation(
     mut q: QuerySet<(
-        Query<(&mut Force, &mut Torque)>,
+        //Query<(&mut Force, &mut Torque)>,
         Query<(&Drag, &mut Force, &Velocity)>,
         Query<(&Gravity, &mut Force, &Mass)>,
         Query<(&Thrust, &mut Force)>,
+        Query<(&Rotator, &mut Force, &mut Torque)>,
     )>,
 ) {
-    // Zero the force and torque accumulators.
-    for (mut f, mut tq) in q.q0_mut().iter_mut() {
-        f.reset();
-        tq.reset();
-    }
+//    // Zero the force and torque accumulators.
+//    for (mut f, mut tq) in q.q0_mut().iter_mut() {
+//        f.reset();
+//        tq.reset();
+//    }
 
     // Apply force generators.
-    for (drag, mut f, v) in q.q1_mut().iter_mut() {
+    for (drag, mut f, v) in q.q0_mut().iter_mut() {
         f.add(drag.force(*v.vector()));
     }
-    for (gravity, mut f, m) in q.q2_mut().iter_mut() {
+    for (gravity, mut f, m) in q.q1_mut().iter_mut() {
         // ensure the mass is not 0 or infinite (or subnormal/NaN).
         if !m.is_normal() { break };
         f.add(gravity.force(m.value()));
     }
-    for (thrust, mut f) in q.q3_mut().iter_mut() {
+    for (thrust, mut f) in q.q2_mut().iter_mut() {
         f.add(*thrust.force());
     }
 
+    // Apply force and torque generators.
+    for (rotator, mut f, mut torque) in q.q3_mut().iter_mut() {
+        rotator.update_force(&mut f, &mut torque);
+//        let (force, body_point) = rotator.force_and_body_point();
+//
+//        println!("force {}, point {}", force, body_point);
+//
+//        add_force_at_body_point(force, body_point, &mut f, &mut torque);
+    }
+
     // TODO apply torques
+}
+
+pub fn reset_force_and_torque_accumulators(mut query: Query<(&mut Force, &mut Torque)>) {
+    // Zero the force and torque accumulators.
+    for (mut f, mut tq) in query.iter_mut() {
+        f.reset();
+        tq.reset();
+    }
 }
 
 /// Updates the force accumulator based on a given force with a direction that intersects the
@@ -50,7 +69,7 @@ fn add_force(
 
 /// Updates the force and torque accumulators based on a given force applied at a given point
 /// relative to the body's centre of mass.
-fn add_force_at_body_point(
+pub fn add_force_at_body_point(
     force: DVec3,
     point: DVec3,
     force_accum: &mut Force,

@@ -1,4 +1,7 @@
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    math::DVec3,
+};
 //use rand::prelude::*;
 
 use crate::{
@@ -63,9 +66,8 @@ fn spawn_fan(
         mass: Mass::new(mass),
         transform: PhysTransform::from_xyz(0.0, 10.0, -10.0),
         ..Default::default()
-    });
-    // TODO add torque generator
-    //.insert(Rotator::new());
+    })
+    .insert(Rotator::new(DVec3::Z, DVec3::new(0.0, 5.0, 0.0), 10.0));
 }
 
 // TODO port old code
