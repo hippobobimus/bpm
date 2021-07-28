@@ -1,5 +1,6 @@
 pub mod components;
 pub mod entity;
+mod oct_tree;
 pub mod systems;
 
 // Re-exports
@@ -10,6 +11,7 @@ pub use components::{
     Gravity,
     InertiaTensor,
     Mass,
+    Rotator,
     Thrust,
     Torque,
     Velocity,
@@ -26,6 +28,7 @@ pub mod prelude {
         InertiaTensor,
         Mass,
         PhysTransform,
+        Rotator,
         Thrust,
         Torque,
         Velocity,
@@ -41,7 +44,18 @@ pub struct PhysicsPlugin;
 
 impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system(forces::force_accumulation.system())
-            .add_system(integrator::integrator.system());
+        app.add_system(
+                forces::reset_force_and_torque_accumulators.system()
+                    .label("reset")
+           )
+            .add_system(
+                forces::force_accumulation.system()
+                    .label("forces")
+                    .after("reset")
+            )
+            .add_system(
+                integrator::integrator.system()
+                    .after("forces")
+            );
     }
 }
