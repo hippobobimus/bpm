@@ -33,16 +33,16 @@ impl PhysTransform {
         }
     }
 
-    pub fn rotation(&self) -> &DQuat {
-        &self.rotation
+    pub fn rotation(&self) -> DQuat {
+        self.rotation
     }
 
-    pub fn translation(&self) -> &DVec3 {
-        &self.translation
+    pub fn translation(&self) -> DVec3 {
+        self.translation
     }
 
-    pub fn matrix(&self) -> &DMat4 {
-        &self.matrix
+    pub fn matrix(&self) -> DMat4 {
+        self.matrix
     }
 
     pub fn calc_derived_data(&mut self) {

@@ -5,33 +5,37 @@ use std::collections::HashMap;
 
 /// Each node has eight children that correspond to subdivision of the node's bounding box into
 /// equal octants. This enum is used to lookup a child node based on a specific octant position.
+///
+/// Labels represent the positive or negative halfspace in each axis that an octant corresponds to,
+/// given an origin at the centre of the subdivided space. e.g. the 0th octant is in the negative
+/// halfspace of all three axes so has the label NegNegNeg.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum ChildOctant {
-    BottomBackLeft = 0,
-    BottomBackRight = 1,
-    BottomFrontLeft = 2,
-    BottomFrontRight = 3,
-    TopBackLeft = 4,
-    TopBackRight = 5,
-    TopFrontLeft = 6,
-    TopFrontRight = 7,
+    NegNegNeg = 0,
+    PosNegNeg = 1,
+    NegPosNeg = 2,
+    PosPosNeg = 3,
+    NegNegPos = 4,
+    PosNegPos = 5,
+    NegPosPos = 6,
+    PosPosPos = 7,
 }
 
 impl ChildOctant {
     // All possible values of the enum.
-    const VALUES: [Self; 8] = [
-        Self::BottomBackLeft,
-        Self::BottomBackRight,
-        Self::BottomFrontLeft,
-        Self::BottomFrontRight,
-        Self::TopBackLeft,
-        Self::TopBackRight,
-        Self::TopFrontLeft,
-        Self::TopFrontRight,
+    pub const VALUES: [Self; 8] = [
+        Self::NegNegNeg,
+        Self::PosNegNeg,
+        Self::NegPosNeg,
+        Self::PosPosNeg,
+        Self::NegNegPos,
+        Self::PosNegPos,
+        Self::NegPosPos,
+        Self::PosPosPos,
     ];
 
-    /// Returns a unit vector describing the offset direction of a child node's centre from its
-    /// parent's centre.
+    /// Returns a vector describing the offset direction of a child node's centre from its
+    /// parent's centre. The vector has either value 1 or -1 in each axis.
     pub fn centre_offset(&self) -> DVec3 {
         *OCTANT_DIRECTION_MAP.get(self).expect("OCTANT_DIRECTION_MAP is incomplete!")
     }
@@ -43,36 +47,36 @@ lazy_static! {
     static ref OCTANT_DIRECTION_MAP: HashMap<ChildOctant, DVec3> = {
         let mut map = HashMap::new();
         map.insert(
-            ChildOctant::BottomBackLeft,
-            DVec3::new(-1.0, -1.0, -1.0).normalize(),
+            ChildOctant::NegNegNeg,
+            DVec3::new(-1.0, -1.0, -1.0),
         );
         map.insert(
-            ChildOctant::BottomBackRight,
-            DVec3::new(1.0, -1.0, -1.0).normalize(),
+            ChildOctant::PosNegNeg,
+            DVec3::new(1.0, -1.0, -1.0),
         );
         map.insert(
-            ChildOctant::BottomFrontLeft,
-            DVec3::new(-1.0, -1.0, 1.0).normalize(),
+            ChildOctant::NegPosNeg,
+            DVec3::new(-1.0, 1.0, -1.0),
         );
         map.insert(
-            ChildOctant::BottomFrontRight,
-            DVec3::new(1.0, -1.0, 1.0).normalize(),
+            ChildOctant::PosPosNeg,
+            DVec3::new(1.0, 1.0, -1.0),
         );
         map.insert(
-            ChildOctant::TopBackLeft,
-            DVec3::new(-1.0, 1.0, -1.0).normalize(),
+            ChildOctant::NegNegPos,
+            DVec3::new(-1.0, -1.0, 1.0),
         );
         map.insert(
-            ChildOctant::TopBackRight,
-            DVec3::new(1.0, 1.0, -1.0).normalize(),
+            ChildOctant::PosNegPos,
+            DVec3::new(1.0, -1.0, 1.0),
         );
         map.insert(
-            ChildOctant::TopFrontLeft,
-            DVec3::new(-1.0, 1.0, 1.0).normalize(),
+            ChildOctant::NegPosPos,
+            DVec3::new(-1.0, 1.0, 1.0),
         );
         map.insert(
-            ChildOctant::TopFrontRight,
-            DVec3::new(1.0, 1.0, 1.0).normalize(),
+            ChildOctant::PosPosPos,
+            DVec3::new(1.0, 1.0, 1.0),
         );
         map
     };

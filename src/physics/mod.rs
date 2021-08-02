@@ -1,6 +1,7 @@
 pub mod components;
 pub mod entity;
 mod oct_tree;
+mod shapes;
 pub mod systems;
 
 // Re-exports
@@ -34,11 +35,17 @@ pub mod prelude {
         Velocity,
     };
     pub use super::entity::PhysicsBundle;
+    pub use super::oct_tree::OctTree;
+    pub use super::shapes::{
+        Aabb3D,
+        Plane,
+        Sphere,
+    };
 }
 
 use bevy::prelude::*;
 
-use systems::{forces, integrator};
+use systems::{collision_detection, forces, integrator};
 
 pub struct PhysicsPlugin;
 
@@ -55,7 +62,12 @@ impl Plugin for PhysicsPlugin {
             )
             .add_system(
                 integrator::integrator.system()
+                    .label("integrator")
                     .after("forces")
+            )
+            .add_system(
+                collision_detection::detect_collisions.system()
+                    .after("integrator")
             );
     }
 }
