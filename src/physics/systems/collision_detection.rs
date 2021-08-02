@@ -8,8 +8,9 @@ use crate::{
     physics::prelude::*,
 };
 
-pub fn detect_collisions(
-    spheres_query: Query<(Entity, &Mass, &PhysTransform, &Sphere)>,
+pub fn build_tree(
+    mut commands: Commands,
+    spheres_query: Query<(Entity, &PhysTransform, &Sphere), With<Mass>>,
 ) {
     // create oct-tree that covers the gameplay volume.
     let centre = DVec3::new(
@@ -27,9 +28,32 @@ pub fn detect_collisions(
     tree.initialize(centre, bounding_box);
 
     // insert the ids of all entities (with mass) that have a spherical collider shape.
-    for (ent, _mass, transform, sphere) in spheres_query.iter() {
+    for (ent, transform, sphere) in spheres_query.iter() {
         tree.insert_sphere(*sphere, transform.translation(), ent.id());
     }
+
+    commands.insert_resource(tree);
+}
+
+pub fn update_tree(
+    added_query: Query<(Entity, &PhysTransform, &Sphere), (With<Mass>, Added<PhysTransform>)>,
+    moved_query: Query<(Entity, &PhysTransform, &Sphere), (With<Mass>, Changed<PhysTransform>)>,
+    mut tree: ResMut<OctTree<u32>>,
+) {
+    // insert any new items into the tree.
+    for (ent, transform, sphere) in added_query.iter() {
+        tree.insert_sphere(*sphere, transform.translation(), ent.id());
+    }
+
+    // update any existing items that have moved.
+    for (ent, transform, sphere) in moved_query.iter() {
+        tree.update_sphere(*sphere, transform.translation(), ent.id());
+    }
+}
+
+pub fn detect_collisions(
+    //spheres_query: Query<(Entity, &Mass, &PhysTransform, &Sphere)>,
+) {
 
 //    // walk tree and find/resolve collisions
 //    self.detect_all_internal_collisions(&qt, &mut data);

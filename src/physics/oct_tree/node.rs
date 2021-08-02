@@ -1,5 +1,7 @@
 use bevy::math::DVec3;
 
+use std::collections::HashSet;
+
 use crate::{
     physics::oct_tree::{ChildOctant, OctIndex},
     physics::shapes::*,
@@ -7,14 +9,14 @@ use crate::{
 };
 
 /// Each node has a unique index that locates it within the oct-tree arena, an outer boundary as a
-/// centre position and axis-aligned bounding box, a vector list of stored data and an array of 8
-/// optional child node indices.
+/// centre position and axis-aligned bounding box, a set of stored data and an array of 8 optional
+/// child node indices.
 #[derive(Debug)]
 pub struct Node<T: Copy> {
     idx: OctIndex,
     pub centre: DVec3,
     pub boundary: Aabb3D,
-    pub data: Vec<T>,
+    pub data: HashSet<T>,
     pub children: [Option<OctIndex>; 8],
 }
 
@@ -25,7 +27,7 @@ impl<T: Copy> Node<T> {
             idx,
             centre,
             boundary,
-            data: vec![],
+            data: HashSet::new(),
             children: Default::default(),
         }
     }
@@ -35,8 +37,8 @@ impl<T: Copy> Node<T> {
         self.idx
     }
 
-    /// Returns a vector list of data stored in this node.
-    pub fn get_data(&self) -> &Vec<T> {
+    /// Returns the set of data stored in this node.
+    pub fn get_data(&self) -> &HashSet<T> {
         &self.data
     }
 

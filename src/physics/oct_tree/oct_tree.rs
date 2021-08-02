@@ -1,26 +1,32 @@
 use bevy::math::DVec3;
 
+use std::{
+    collections::HashMap,
+    hash::Hash,
+};
+
 use crate::{
     physics::oct_tree::{ChildOctant, OctIndex, node::Node},
     physics::shapes::{self, *},
-    //shapes::{self, Circle, Plane},
 };
 
 /// An arena based, statically sized oct-tree implementation that stores nodes in a vector. It is
 /// used to house data that implements the Copy trait.
 #[derive(Debug, Default)]
-pub struct OctTree<T: Copy> {
+pub struct OctTree<T: Copy + Hash + Eq> {
     arena: Vec<Node<T>>,
+    data_node_map: HashMap<T, OctIndex>,
     root: OctIndex,
 }
 
-impl<T: Copy> OctTree<T> {
+impl<T: Copy + Hash + Eq> OctTree<T> {
     const MAX_DEPTH: i32 = 5;
 
     /// Creates a new empty OctTree.
     pub fn new() -> Self {
         Self {
             arena: vec![],
+            data_node_map: HashMap::new(),
             root: 0,
         }
     }
@@ -29,7 +35,7 @@ impl<T: Copy> OctTree<T> {
     /// the given position.
     pub fn initialize(&mut self, centre: DVec3, boundary: Aabb3D) {
         // Recursive helper function that builds out the tree down to the given depth.
-        fn helper<T: Copy>(
+        fn helper<T: Copy + Hash + Eq>(
             qt: &mut OctTree<T>,
             depth: i32,
             centre: DVec3,
@@ -154,7 +160,28 @@ impl<T: Copy> OctTree<T> {
         }
 
         // Finally insert the data at the reached tree node.
-        self.arena[node_idx].data.push(data);
+        self.arena[node_idx].data.insert(data);
+
+        // Record the node where this data entry is stored so it can be updated easily.
+        self.data_node_map.insert(data, node_idx);
+    }
+
+    fn remove(&mut self, data: T) {
+        let node_idx = match self.data_node_map.get(&data) {
+            Some(idx) => idx,
+            None => return, // no data to remove.
+        };
+
+        self.arena[*node_idx].data.remove(&data);
+    }
+
+    // TODO could be optimised to make better use of the knowledge of where the data is stored in
+    // the tree. Assuming objects aren't moving quickly, it should be moved to a nearby node.
+    /// Updates the location of the data point in the tree based on its current associated
+    /// geometric position and spherical shape.
+    pub fn update_sphere(&mut self, sphere: Sphere, position: DVec3, data: T) {
+        self.remove(data);
+        self.insert_sphere(sphere, position, data);
     }
 
     /// Returns all data entries in the quad tree that reside in nodes intersected by the given
@@ -163,7 +190,7 @@ impl<T: Copy> OctTree<T> {
         // Determines whether the plane intersects the current node and then recursively checks any
         // connected child nodes, collecting any data entries found in intersected nodes along
         // the way.
-        fn helper<T: Copy>(
+        fn helper<T: Copy + Hash + Eq>(
             qt: &OctTree<T>,
             node_idx: OctIndex,
             plane: &Plane,
@@ -216,7 +243,7 @@ impl OctTreePreorderIter {
 
     /// Returns the next node index in the preorder traversal of the tree. Takes a reference to the
     /// tree each time it is called to allow tree mutations between calls.
-    pub fn next<T: Copy>(&mut self, oct_tree: &OctTree<T>) -> Option<OctIndex> {
+    pub fn next<T: Copy + Hash + Eq>(&mut self, oct_tree: &OctTree<T>) -> Option<OctIndex> {
         if let Some(node_idx) = self.stack.pop() {
             if let Some(node) = oct_tree.get_node(node_idx) {
                 // push the child node idx on to the stack in reverse order so that they are

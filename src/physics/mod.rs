@@ -51,10 +51,14 @@ pub struct PhysicsPlugin;
 
 impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system(
+        app
+            .add_startup_system(
+                collision_detection::build_tree.system()
+            )
+            .add_system(
                 forces::reset_force_and_torque_accumulators.system()
                     .label("reset")
-           )
+            )
             .add_system(
                 forces::force_accumulation.system()
                     .label("forces")
@@ -65,9 +69,16 @@ impl Plugin for PhysicsPlugin {
                     .label("integrator")
                     .after("forces")
             )
-            .add_system(
-                collision_detection::detect_collisions.system()
+            .add_system_set(
+                SystemSet::new()
+                    .label("collision detection")
                     .after("integrator")
+                    .with_system(collision_detection::update_tree.system()
+                                 .label("tree update")
+                    )
+                    .with_system(collision_detection::detect_collisions.system()
+                                 .after("tree update")
+                    )
             );
     }
 }

@@ -45,7 +45,8 @@ fn spawn_player(
         mass: Mass::new(mass),
         transform: PhysTransform::from_xyz(0.0, radius_f64, 0.0),
         ..Default::default()
-    });
+    })
+    .insert(Sphere::new(radius_f64));
 }
 
 fn spawn_fan(
