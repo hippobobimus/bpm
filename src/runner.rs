@@ -54,22 +54,31 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    // Plane
+    // Planes
     commands.spawn_bundle(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Plane { size: 60.0 })),
+        mesh: meshes.add(Mesh::from(shape::Plane { size: 200.0 })),
         material: materials.add(Color::rgb(0.0, 1.0, 0.0).into()),
+        ..Default::default()
+    });
+    commands.spawn_bundle(PbrBundle {
+        mesh: meshes.add(Mesh::from(shape::Plane { size: 200.0 })),
+        material: materials.add(Color::rgb(0.0, 1.0, 0.0).into()),
+        transform: Transform::from_matrix(Mat4::from_rotation_translation(
+            Quat::from_rotation_x(0.5 * std::f32::consts::PI),
+            Vec3::new(0.0, 100.0, -100.0),
+        )),
         ..Default::default()
     });
 
     // Camera
     commands.spawn_bundle(PerspectiveCameraBundle {
-        transform: Transform::from_xyz(0.0, 60.0, 90.0).looking_at(Vec3::ZERO, Vec3::Y),
+        transform: Transform::from_xyz(0.0, 120.0, 180.0).looking_at(Vec3::ZERO, Vec3::Y),
         ..Default::default()
     });
 
     // Light
     commands.spawn_bundle(LightBundle {
-        transform: Transform::from_translation(Vec3::new(0.0, 60.0, 0.0)),
+        transform: Transform::from_translation(Vec3::new(0.0, 120.0, 0.0)),
         light: Light {
             intensity: 10_000.0,
             range: 150.0,

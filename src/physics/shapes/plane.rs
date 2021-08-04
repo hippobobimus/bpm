@@ -35,7 +35,7 @@ impl Collidable for Plane {
 
     /// Calculates and returns the shortest distance between the plane, located by the given
     /// position, and the target point.
-    fn shortest_dist_to(&self, plane_position: DVec3, target: DVec3) -> f64 {
+    fn shortest_distance_to(&self, plane_position: DVec3, target: DVec3) -> f64 {
         self.normal.dot(target - plane_position)
     }
 }

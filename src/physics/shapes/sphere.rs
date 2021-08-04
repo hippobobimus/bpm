@@ -1,3 +1,5 @@
+use crate::physics::shapes::Collider;
+
 /// A sphere described by its radius only. The centre position is not stored directly.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Sphere {
@@ -15,3 +17,5 @@ impl Sphere {
         self.radius
     }
 }
+
+impl Collider for Sphere {}

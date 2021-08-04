@@ -6,7 +6,8 @@ use std::{
 };
 
 use crate::{
-    physics::oct_tree::{ChildOctant, OctIndex, node::Node},
+    physics::components::PhysTransform,
+    physics::oct_tree::{ChildOctant, OctIndex, node::OctTreeNode},
     physics::shapes::{self, *},
 };
 
@@ -14,7 +15,7 @@ use crate::{
 /// used to house data that implements the Copy trait.
 #[derive(Debug, Default)]
 pub struct OctTree<T: Copy + Hash + Eq> {
-    arena: Vec<Node<T>>,
+    arena: Vec<OctTreeNode<T>>,
     data_node_map: HashMap<T, OctIndex>,
     root: OctIndex,
 }
@@ -48,7 +49,7 @@ impl<T: Copy + Hash + Eq> OctTree<T> {
 
             // Add new node to arena.
             let idx = qt.arena.len();
-            qt.arena.push(Node::new(idx, centre, boundary));
+            qt.arena.push(OctTreeNode::new(idx, centre, boundary));
 
             // Populate node's children by subdividing current node into equal quarters.
             for c in ChildOctant::VALUES.iter() {
@@ -86,13 +87,13 @@ impl<T: Copy + Hash + Eq> OctTree<T> {
 
     /// Returns an option; either Some() containing a reference to the root node, or None if there
     /// is no root node (i.e. the tree has not been initialised).
-    pub fn get_root_node(&self) -> Option<&Node<T>> {
+    pub fn get_root_node(&self) -> Option<&OctTreeNode<T>> {
         self.get_node(self.root)
     }
 
     /// Returns a reference to the node located at the given arena index contained within an
     /// Option. Returns None if the node is not found.
-    pub fn get_node(&self, idx: OctIndex) -> Option<&Node<T>> {
+    pub fn get_node(&self, idx: OctIndex) -> Option<&OctTreeNode<T>> {
         self.arena.get(idx)
     }
 
@@ -118,7 +119,7 @@ impl<T: Copy + Hash + Eq> OctTree<T> {
     fn calc_child_octant_idx(
         &self,
         node_idx: OctIndex,
-        shape: Sphere,
+        shape: &Sphere,
         shape_centre: DVec3,
     ) -> Option<usize> {
         let mut idx = 0;
@@ -142,7 +143,20 @@ impl<T: Copy + Hash + Eq> OctTree<T> {
 
     // TODO return error if shape outside the bounds of the tree?
     /// Inserts the given data into the tree according to its associated shape and position.
-    pub fn insert_sphere(&mut self, shape: Sphere, shape_pos: DVec3, data: T) {
+    pub fn insert(&mut self, primative: &CollisionPrimative, transform: &PhysTransform, data: T) {
+        let is_sphere = primative.0.is::<Sphere>();
+
+        if is_sphere {
+            self.insert_sphere(
+                primative.0.downcast_ref::<Sphere>().unwrap(),
+                transform.translation(),
+                data
+            );
+        }
+    }
+
+    /// Specific insert method for sphere primatives.
+    fn insert_sphere(&mut self, shape: &Sphere, shape_pos: DVec3, data: T) {
         let mut node_idx = self.root;  // start at root
 
         // Traverse down the branch, stopping if the shape will not fit within a child node, or a
@@ -179,9 +193,18 @@ impl<T: Copy + Hash + Eq> OctTree<T> {
     // the tree. Assuming objects aren't moving quickly, it should be moved to a nearby node.
     /// Updates the location of the data point in the tree based on its current associated
     /// geometric position and spherical shape.
-    pub fn update_sphere(&mut self, sphere: Sphere, position: DVec3, data: T) {
+    pub fn update(&mut self, primative: &CollisionPrimative, transform: &PhysTransform, data: T) {
+        let is_sphere = primative.0.is::<Sphere>();
+
         self.remove(data);
-        self.insert_sphere(sphere, position, data);
+
+        if is_sphere {
+            self.insert_sphere(
+                primative.0.downcast_ref::<Sphere>().unwrap(),
+                transform.translation(),
+                data
+            );
+        }
     }
 
     /// Returns all data entries in the quad tree that reside in nodes intersected by the given
@@ -293,7 +316,7 @@ mod test {
 
                     while x_max <= span {
                         qt.insert_sphere(
-                            Sphere::new(0.01),
+                            &Sphere::new(0.01),
                             DVec3::new(
                                 (x_min + x_max) / 2.0,
                                 (y_min + y_max) / 2.0,
@@ -448,15 +471,15 @@ mod test {
         // check spheres enclosed within an octant return the correct index.
         let mut indices_enclosed: Vec<usize> = vec![];
         for pos in enclosed_sphere_pos_list {
-            println!("pos {}, idx {}", pos, qt_1.calc_child_octant_idx(root_idx, Sphere::new(radius), pos)
+            println!("pos {}, idx {}", pos, qt_1.calc_child_octant_idx(root_idx, &Sphere::new(radius), pos)
                                  .expect("no index returned for sphere!"));
-            indices_enclosed.push(qt_1.calc_child_octant_idx(root_idx, Sphere::new(radius), pos)
+            indices_enclosed.push(qt_1.calc_child_octant_idx(root_idx, &Sphere::new(radius), pos)
                                  .expect("no index returned for sphere!"));
         }
 
         let mut indices_spanning = vec![];
         for pos in spanning_sphere_pos_list {
-            indices_spanning.push(qt_1.calc_child_octant_idx(root_idx, Sphere::new(radius), pos));
+            indices_spanning.push(qt_1.calc_child_octant_idx(root_idx, &Sphere::new(radius), pos));
         }
 
         let indices_enclosed_expected = vec![0, 1, 2, 3, 4, 5, 6, 7];
@@ -482,7 +505,7 @@ mod test {
         // should be wholly contained in octant 2.
         let child_octant_enc = qt_2.calc_child_octant_idx(
             root_idx,
-            Sphere::new(4.0),
+            &Sphere::new(4.0),
             DVec3::new(62.5, 87.5, 68.75),
         )
         .expect("no index returned for sphere!");
@@ -491,7 +514,7 @@ mod test {
         // should span all octants and therefore return None.
         let child_octant_span = qt_2.calc_child_octant_idx(
             root_idx,
-            Sphere::new(1.0),
+            &Sphere::new(1.0),
             DVec3::new(75.0, 75.0, 75.0)
         );
 
@@ -517,7 +540,7 @@ mod test {
                 rng.gen_range(0.0..100.0),
             );
             let data = rng.gen_range(4..10_000);
-            qt.insert_sphere(c, c_pos, data);
+            qt.insert_sphere(&c, c_pos, data);
         }
 
         // check placement
@@ -526,7 +549,7 @@ mod test {
 
         // entity index 1 should be in the 5th level,
         // L0 Octant2 -> L1 Octant2 -> L2 Octant2 -> L3 Octant2 -> L4 Octant2 -> L5 location
-        qt.insert_sphere(Sphere::new(2.0), DVec3::new(1.0, 1.0, 1.0), 1);
+        qt.insert_sphere(&Sphere::new(2.0), DVec3::new(1.0, 1.0, 1.0), 1);
 
         node_idx = find_node_idx_by_octants(&qt, vec![0, 0, 0, 0, 0]);
         node = qt.get_node(node_idx).expect("no L5 destination node!");
@@ -534,7 +557,7 @@ mod test {
         assert!(node.data.contains(&1));
 
         // entity index 2 should be in 0th level
-        qt.insert_sphere(Sphere::new(0.01), DVec3::new(50.0, 50.0, 50.0), 2);
+        qt.insert_sphere(&Sphere::new(0.01), DVec3::new(50.0, 50.0, 50.0), 2);
 
         node_idx = find_node_idx_by_octants(&qt, vec![]);
         node = qt.get_node(node_idx).expect("no root!");
@@ -542,7 +565,7 @@ mod test {
         assert!(node.data.contains(&2));
 
         // entity index 3 should be in the 2nd level, L0 Q3 -> L1 Q0 -> L2 location
-        qt.insert_sphere(Sphere::new(4.0), DVec3::new(68.75, 62.5, 68.75), 3);
+        qt.insert_sphere(&Sphere::new(4.0), DVec3::new(68.75, 62.5, 68.75), 3);
 
         node_idx = find_node_idx_by_octants(&qt, vec![7, 0]);
         node = qt.get_node(node_idx).expect("no L2 destination node!");
@@ -628,7 +651,7 @@ mod test {
                 assert_eq!(1, node.data.len());
 
                 // check correct data entry is found
-                assert_eq!(expected[node_count as usize], node.data[0]);
+                assert!(node.data.contains(&expected[node_count as usize]));
                 node_count += 1;
             }
         }

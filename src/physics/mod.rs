@@ -35,9 +35,11 @@ pub mod prelude {
         Velocity,
     };
     pub use super::entity::PhysicsBundle;
-    pub use super::oct_tree::OctTree;
+    pub use super::oct_tree::{OctIndex, OctTree, OctTreeNode};
     pub use super::shapes::{
         Aabb3D,
+        CollisionPrimative,
+        Cuboid,
         Plane,
         Sphere,
     };
@@ -53,7 +55,7 @@ impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app
             .add_startup_system(
-                collision_detection::build_tree.system()
+                collision_detection::initialize.system()
             )
             .add_system(
                 forces::reset_force_and_torque_accumulators.system()
@@ -76,8 +78,12 @@ impl Plugin for PhysicsPlugin {
                     .with_system(collision_detection::update_tree.system()
                                  .label("tree update")
                     )
-                    .with_system(collision_detection::detect_collisions.system()
+                    .with_system(collision_detection::broad_phase.system()
+                                 .label("broad phase")
                                  .after("tree update")
+                    )
+                    .with_system(collision_detection::contact_generation.system()
+                                 .after("broad phase")
                     )
             );
     }

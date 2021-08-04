@@ -15,6 +15,14 @@ pub static FMIN_X: f64 = -FMAX_X;
 pub static FMIN_Y: f64 = -FMAX_Y;
 
 // Physics
+// --Play area
+pub static PLAY_AREA_CENTRE_X: f64 = 0.0;
+pub static PLAY_AREA_CENTRE_Y: f64 = 100.0;
+pub static PLAY_AREA_CENTRE_Z: f64 = 0.0;
+pub static PLAY_AREA_EXTENT_X: f64 = 100.0;
+pub static PLAY_AREA_EXTENT_Y: f64 = 100.0;
+pub static PLAY_AREA_EXTENT_Z: f64 = 100.0;
+// --Float precision
 pub static LOW_VELOCITY_THRESHOLD: f64 = 1.0;
 // --Damping
 pub static DAMPING_FACTOR: f64 = 0.999;

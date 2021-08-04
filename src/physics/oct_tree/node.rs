@@ -12,7 +12,7 @@ use crate::{
 /// centre position and axis-aligned bounding box, a set of stored data and an array of 8 optional
 /// child node indices.
 #[derive(Debug)]
-pub struct Node<T: Copy> {
+pub struct OctTreeNode<T: Copy> {
     idx: OctIndex,
     pub centre: DVec3,
     pub boundary: Aabb3D,
@@ -20,7 +20,7 @@ pub struct Node<T: Copy> {
     pub children: [Option<OctIndex>; 8],
 }
 
-impl<T: Copy> Node<T> {
+impl<T: Copy> OctTreeNode<T> {
     /// Creates an empty node with the given index, center position and outer boundary.
     pub fn new(idx: OctIndex, centre: DVec3, boundary: Aabb3D) -> Self {
         Self {

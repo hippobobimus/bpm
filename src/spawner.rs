@@ -2,7 +2,7 @@ use bevy::{
     prelude::*,
     math::DVec3,
 };
-//use rand::prelude::*;
+use rand::prelude::*;
 
 use crate::{
     components::*,
@@ -17,7 +17,9 @@ pub struct SpawnerPlugin;
 impl Plugin for SpawnerPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_startup_system(spawn_player.system())
-            .add_startup_system(spawn_fan.system());
+            .add_startup_system(spawn_cuboids.system())
+            .add_startup_system(spawn_fan.system())
+            .add_startup_system(spawn_spheres.system());
     }
 }
 
@@ -40,13 +42,76 @@ fn spawn_player(
     })
     .insert(KeyboardControlled)
     .insert(Player)
-    .insert_bundle(PhysicsBundle {
-        inertia_tensor: InertiaTensor::sphere(mass, radius_f64),
-        mass: Mass::new(mass),
-        transform: PhysTransform::from_xyz(0.0, radius_f64, 0.0),
-        ..Default::default()
-    })
-    .insert(Sphere::new(radius_f64));
+    .insert_bundle(PhysicsBundle::sphere(
+            mass,
+            radius_f64,
+            PhysTransform::from_xyz(0.0, radius_f64, 0.0),
+    ));
+}
+
+fn spawn_spheres(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    let qty = 10;
+    let mass = 10.0;
+    let radius: f64 = 1.0;
+
+    let mut rng = thread_rng();
+    for _ in 0..qty {
+        let x: f64 =  rng.gen_range(-50.0..50.0);
+        let y: f64 =  rng.gen_range(radius..20.0);
+        let z: f64 =  rng.gen_range(-50.0..50.0);
+
+        commands.spawn_bundle(PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Icosphere {
+                radius: radius as f32,
+                subdivisions: 10,
+            })),
+            material: materials.add(Color::rgb(1.0, 0.5, 0.0).into()),
+            transform: Transform::from_xyz(x as f32, y as f32, z as f32),
+            ..Default::default()
+        })
+        .insert_bundle(PhysicsBundle::sphere(
+            mass,
+            radius,
+            PhysTransform::from_xyz(x, y, z),
+        ));
+    }
+}
+
+fn spawn_cuboids(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    let qty = 10;
+    let mass = 10.0;
+    let extents: DVec3 = DVec3::new(1.0, 1.0, 1.0);
+
+    let mut rng = thread_rng();
+    for _ in 0..qty {
+        let x: f64 =  rng.gen_range(-50.0..50.0);
+        let y: f64 =  rng.gen_range(extents.y..20.0);
+        let z: f64 =  rng.gen_range(-50.0..50.0);
+
+        commands.spawn_bundle(PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Box::new(
+                extents.x as f32 * 2.0,
+                extents.y as f32 * 2.0,
+                extents.z as f32 * 2.0,
+            ))),
+            material: materials.add(Color::rgb(0.2, 0.7, 0.2).into()),
+            transform: Transform::from_xyz(x as f32, y as f32, z as f32),
+            ..Default::default()
+        })
+        .insert_bundle(PhysicsBundle::cuboid(
+                mass,
+                extents,
+                PhysTransform::from_xyz(x, y, z),
+        ));
+    }
 }
 
 fn spawn_fan(

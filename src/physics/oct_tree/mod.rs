@@ -8,4 +8,5 @@ pub type OctIndex = usize;
 pub use crate::physics::oct_tree::{
     child_octant::ChildOctant,
     oct_tree::OctTree,
+    node::OctTreeNode,
 };

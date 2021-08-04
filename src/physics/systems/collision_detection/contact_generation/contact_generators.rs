@@ -1,6 +1,9 @@
 use bevy::math::DVec3;
 
-use crate::physics::shapes::*;
+use crate::{
+    physics::shapes::*,
+    physics::systems::collision_detection::contact_generation::contact::Contact,
+};
 
 /// Evaluates whether the axis-aligned bounding box centred at the given position and the plane
 /// containing the given point intersect.
@@ -18,14 +21,8 @@ pub fn aabb_plane_are_intersecting(a: &Aabb3D, a_pos: DVec3, p: &Plane, p_pos: D
     dist <= r
 }
 
-struct Contact {
-    normal: DVec3,
-    penetration: f64,
-    point: DVec3,
-}
-
 ///
-fn sphere_and_sphere(s1: &Sphere, pos_1: DVec3, s2: &Sphere, pos_2: DVec3) -> Option<Contact> {
+pub fn sphere_and_sphere(s1: &Sphere, pos_1: DVec3, s2: &Sphere, pos_2: DVec3) -> Option<Contact> {
     let midline = pos_1 - pos_2;
     let length = midline.length();
 
@@ -41,7 +38,7 @@ fn sphere_and_sphere(s1: &Sphere, pos_1: DVec3, s2: &Sphere, pos_2: DVec3) -> Op
     Some(Contact { normal, penetration, point })
 }
 
-fn sphere_and_half_space(s: &Sphere, s_pos: DVec3, p: &Plane, p_pos: DVec3) -> Option<Contact> {
+pub fn sphere_and_half_space(s: &Sphere, s_pos: DVec3, p: &Plane, p_pos: DVec3) -> Option<Contact> {
     let d = p.shortest_distance_to(p_pos, s_pos);
 
     if d >= s.radius() {

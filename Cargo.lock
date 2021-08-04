@@ -2661,6 +2661,7 @@ name = "physicssimulation"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "downcast-rs",
  "lazy_static",
  "nalgebra",
  "rand",
