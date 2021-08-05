@@ -15,6 +15,7 @@ pub static FMIN_X: f64 = -FMAX_X;
 pub static FMIN_Y: f64 = -FMAX_Y;
 
 // Physics
+pub static MAX_OCT_TREE_DEPTH: i32 = 5;
 // --Play area
 pub static PLAY_AREA_CENTRE_X: f64 = 0.0;
 pub static PLAY_AREA_CENTRE_Y: f64 = 100.0;

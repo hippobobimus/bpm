@@ -1,6 +1,6 @@
 use bevy::math::DVec3;
 
-use crate::physics::shapes::Collider;
+use crate::physics::shapes::CollisionPrimative;
 
 /// A 6-sided polygon described by its extents in local body coords. The cuboid is axis aligned in
 /// local body space with the origin at the centre of the cuboid.
@@ -21,4 +21,4 @@ impl Cuboid {
     }
 }
 
-impl Collider for Cuboid {}
+impl CollisionPrimative for Cuboid {}

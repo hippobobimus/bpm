@@ -7,12 +7,11 @@ use crate::{
     constants,
     physics::prelude::*,
     physics::collision_detection,
-    physics::shapes::CollisionPrimative,
 };
 
 pub fn initialize(
     mut commands: Commands,
-    shapes_query: Query<(Entity, &PhysTransform, &CollisionPrimative), With<Mass>>,
+    shapes_query: Query<(Entity, &Collider, &PhysTransform), With<Mass>>,
 ) {
     // create oct-tree that covers the gameplay volume.
     let centre = DVec3::new(
@@ -26,12 +25,12 @@ pub fn initialize(
         constants::PLAY_AREA_EXTENT_Y,
     );
 
-    let mut tree = OctTree::new();
+    let mut tree = OctTree::new(constants::MAX_OCT_TREE_DEPTH);
     tree.initialize(centre, bounding_box);
 
     // insert the ids of all entities (with mass) that have a primative shape for collisions.
-    for (ent, transform, shape) in shapes_query.iter() {
-        tree.insert(shape, transform, ent);
+    for (ent, collider, transform) in shapes_query.iter() {
+        tree.insert(collider, transform, ent);
     }
 
     commands.insert_resource(tree);
@@ -41,18 +40,18 @@ pub fn initialize(
 }
 
 pub fn update_tree(
-    added_query: Query<(Entity, &PhysTransform, &CollisionPrimative), (With<Mass>, Added<PhysTransform>)>,
-    moved_query: Query<(Entity, &PhysTransform, &CollisionPrimative), (With<Mass>, Changed<PhysTransform>)>,
+    added_query: Query<(Entity, &Collider, &PhysTransform), (With<Mass>, Added<PhysTransform>)>,
+    moved_query: Query<(Entity, &Collider, &PhysTransform), (With<Mass>, Changed<PhysTransform>)>,
     mut tree: ResMut<OctTree<Entity>>,
 ) {
     // insert any new items into the tree.
-    for (ent, transform, shape) in added_query.iter() {
-        tree.insert(shape, transform, ent);
+    for (ent, collider, transform) in added_query.iter() {
+        tree.insert(collider, transform, ent);
     }
 
     // update any existing items that have moved.
-    for (ent, transform, shape) in moved_query.iter() {
-        tree.update(shape, transform, ent);
+    for (ent, collider, transform) in moved_query.iter() {
+        tree.update(collider, transform, ent);
     }
 }
 
@@ -108,16 +107,16 @@ pub fn broad_phase(
 }
 
 pub fn contact_generation(
-    query: Query<(&CollisionPrimative, &PhysTransform)>,
+    query: Query<(&Collider, &PhysTransform)>,
     mut candidates: ResMut<CollisionCandidates>,
 ) {
     while let Some((ent_a, ent_b)) = candidates.pop() {
-        if let (Ok((primative_a, transform_a)), Ok((primative_b, transform_b))) =
+        if let (Ok((collider_a, transform_a)), Ok((collider_b, transform_b))) =
             (query.get(ent_a), query.get(ent_b))
         {
             let contacts = collision_detection::generate_contacts(
-                &primative_a.0,
-                &primative_b.0,
+                &collider_a.0,
+                &collider_b.0,
                 transform_a,
                 transform_b,
             );

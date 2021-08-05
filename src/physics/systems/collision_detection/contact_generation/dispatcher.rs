@@ -1,17 +1,16 @@
-use bevy::math::DVec3;
-
 use crate::{
     physics::prelude::*,
     physics::systems::collision_detection::contact_generation::contact::Contact,
     physics::systems::collision_detection::contact_generation::contact_generators,
-    physics::shapes::Collider,
+    physics::shapes::CollisionPrimative,
 };
 
-/// Generates contacts between two shapes with the Collider trait by downcasting to the concrete
-/// shape type known at runtime and dispatching to the appropriate contact generation function.
+/// Generates contacts between two shapes with the CollisionPrimative trait by downcasting to the
+/// concrete shape type known at runtime and dispatching to the appropriate contact generation
+/// function.
 pub fn generate_contacts(
-    a: &Box<dyn Collider>,
-    b: &Box<dyn Collider>,
+    a: &Box<dyn CollisionPrimative>,
+    b: &Box<dyn CollisionPrimative>,
     transform_a: &PhysTransform,
     transform_b: &PhysTransform,
 ) -> Option<Contact> {

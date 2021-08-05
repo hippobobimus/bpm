@@ -1,4 +1,4 @@
-use crate::physics::shapes::Collider;
+use crate::physics::shapes::CollisionPrimative;
 
 /// A sphere described by its radius only. The centre position is not stored directly.
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -18,4 +18,4 @@ impl Sphere {
     }
 }
 
-impl Collider for Sphere {}
+impl CollisionPrimative for Sphere {}

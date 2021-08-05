@@ -1,4 +1,5 @@
 pub mod angular_velocity;
+pub mod collider;
 pub mod drag;
 pub mod force;
 pub mod gravity;
@@ -11,6 +12,7 @@ pub mod torque;
 pub mod velocity;
 
 pub use angular_velocity::AngularVelocity;
+pub use collider::Collider;
 pub use drag::Drag;
 pub use force::Force;
 pub use gravity::Gravity;

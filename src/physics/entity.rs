@@ -9,7 +9,7 @@ use crate::physics::prelude::*;
 #[derive(Bundle)]
 pub struct PhysicsBundle {
     pub angular_velocity: AngularVelocity,
-    pub collision_primative: CollisionPrimative,
+    pub collider: Collider,
     pub drag: Drag,
     pub force: Force,
     pub gravity: Gravity,
@@ -28,7 +28,7 @@ impl Default for PhysicsBundle {
 
         Self {
             angular_velocity: Default::default(),
-            collision_primative: CollisionPrimative::new(Sphere::new(radius)),
+            collider: Collider::new(Sphere::new(radius)),
             drag: Default::default(),
             force: Default::default(),
             gravity: Default::default(),
@@ -45,7 +45,7 @@ impl Default for PhysicsBundle {
 impl PhysicsBundle {
     pub fn cuboid(mass: f64, extents: DVec3, transform: PhysTransform) -> Self {
         Self {
-            collision_primative: CollisionPrimative::new(Cuboid::new(extents)),
+            collider: Collider::new(Cuboid::new(extents)),
             inertia_tensor: InertiaTensor::cuboid(mass, extents.x, extents.y, extents.z),
             mass: Mass::new(mass),
             transform,
@@ -55,7 +55,7 @@ impl PhysicsBundle {
 
     pub fn sphere(mass: f64, radius: f64, transform: PhysTransform) -> Self {
         Self {
-            collision_primative: CollisionPrimative::new(Sphere::new(radius)),
+            collider: Collider::new(Sphere::new(radius)),
             inertia_tensor: InertiaTensor::sphere(mass, radius),
             mass: Mass::new(mass),
             transform,

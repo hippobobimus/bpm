@@ -6,9 +6,10 @@ use std::{
 };
 
 use crate::{
-    physics::components::PhysTransform,
+    physics::components::{Collider, PhysTransform},
+    physics::collision_detection::contact_generation::contact_generators,
     physics::oct_tree::{ChildOctant, OctIndex, node::OctTreeNode},
-    physics::shapes::{self, *},
+    physics::shapes::{Aabb3D, Plane, Sphere},
 };
 
 /// An arena based, statically sized oct-tree implementation that stores nodes in a vector. It is
@@ -17,22 +18,22 @@ use crate::{
 pub struct OctTree<T: Copy + Hash + Eq> {
     arena: Vec<OctTreeNode<T>>,
     data_node_map: HashMap<T, OctIndex>,
+    max_depth: i32,
     root: OctIndex,
 }
 
 impl<T: Copy + Hash + Eq> OctTree<T> {
-    const MAX_DEPTH: i32 = 5;
-
     /// Creates a new empty OctTree.
-    pub fn new() -> Self {
+    pub fn new(max_depth: i32) -> Self {
         Self {
             arena: vec![],
             data_node_map: HashMap::new(),
+            max_depth,
             root: 0,
         }
     }
 
-    /// Preallocates an oct-tree down to the maximum depth, within the given boundary and centred at
+    /// Preallocates an OctTree down to the maximum depth, within the given boundary and centred at
     /// the given position.
     pub fn initialize(&mut self, centre: DVec3, boundary: Aabb3D) {
         // Recursive helper function that builds out the tree down to the given depth.
@@ -75,14 +76,9 @@ impl<T: Copy + Hash + Eq> OctTree<T> {
             Some(idx)
         }
 
-        if let Some(root_idx) = helper(self, Self::MAX_DEPTH, centre, boundary) {
+        if let Some(root_idx) = helper(self, self.max_depth, centre, boundary) {
             self.root = root_idx;
         }
-    }
-
-    /// Returns the index of the root node.
-    pub fn get_root_idx(&self) -> OctIndex {
-        self.root
     }
 
     /// Returns an option; either Some() containing a reference to the root node, or None if there
@@ -96,6 +92,43 @@ impl<T: Copy + Hash + Eq> OctTree<T> {
     pub fn get_node(&self, idx: OctIndex) -> Option<&OctTreeNode<T>> {
         self.arena.get(idx)
     }
+
+    // INSERT, REMOVE & UPDATE
+
+    // TODO return error if shape outside the bounds of the tree?
+    /// Inserts the given data into the tree according to its associated shape and position.
+    pub fn insert(&mut self, collider: &Collider, transform: &PhysTransform, data: T) {
+        let is_sphere = collider.0.is::<Sphere>();
+
+        if is_sphere {
+            self.insert_sphere(
+                collider.0.downcast_ref::<Sphere>().unwrap(),
+                transform.translation(),
+                data
+            );
+        }
+    }
+
+    /// Removes the given data entry from the tree, if present.
+    pub fn remove(&mut self, data: T) {
+        let node_idx = match self.data_node_map.get(&data) {
+            Some(idx) => idx,
+            None => return, // no data to remove.
+        };
+
+        self.arena[*node_idx].data.remove(&data);
+    }
+
+    // TODO could be optimised to make better use of the knowledge of where the data is stored in
+    // the tree. Assuming objects aren't moving quickly, it should be moved to a nearby node.
+    /// Updates the location of the data point in the tree based on its current associated
+    /// geometric position and spherical shape.
+    pub fn update(&mut self, collider: &Collider, transform: &PhysTransform, data: T) {
+        self.remove(data);
+        self.insert(collider, transform, data);
+    }
+
+    // -- helper functions
 
     /// Calculates the index of a node's child octant capable of wholly containing the given sphere.
     /// If the sphere does not fit wholly within any octant (allowing for outer perimeter
@@ -141,20 +174,6 @@ impl<T: Copy + Hash + Eq> OctTree<T> {
         Some(idx)
     }
 
-    // TODO return error if shape outside the bounds of the tree?
-    /// Inserts the given data into the tree according to its associated shape and position.
-    pub fn insert(&mut self, primative: &CollisionPrimative, transform: &PhysTransform, data: T) {
-        let is_sphere = primative.0.is::<Sphere>();
-
-        if is_sphere {
-            self.insert_sphere(
-                primative.0.downcast_ref::<Sphere>().unwrap(),
-                transform.translation(),
-                data
-            );
-        }
-    }
-
     /// Specific insert method for sphere primatives.
     fn insert_sphere(&mut self, shape: &Sphere, shape_pos: DVec3, data: T) {
         let mut node_idx = self.root;  // start at root
@@ -180,32 +199,7 @@ impl<T: Copy + Hash + Eq> OctTree<T> {
         self.data_node_map.insert(data, node_idx);
     }
 
-    fn remove(&mut self, data: T) {
-        let node_idx = match self.data_node_map.get(&data) {
-            Some(idx) => idx,
-            None => return, // no data to remove.
-        };
-
-        self.arena[*node_idx].data.remove(&data);
-    }
-
-    // TODO could be optimised to make better use of the knowledge of where the data is stored in
-    // the tree. Assuming objects aren't moving quickly, it should be moved to a nearby node.
-    /// Updates the location of the data point in the tree based on its current associated
-    /// geometric position and spherical shape.
-    pub fn update(&mut self, primative: &CollisionPrimative, transform: &PhysTransform, data: T) {
-        let is_sphere = primative.0.is::<Sphere>();
-
-        self.remove(data);
-
-        if is_sphere {
-            self.insert_sphere(
-                primative.0.downcast_ref::<Sphere>().unwrap(),
-                transform.translation(),
-                data
-            );
-        }
-    }
+    // QUERIES
 
     /// Returns all data entries in the quad tree that reside in nodes intersected by the given
     /// plane.
@@ -224,7 +218,7 @@ impl<T: Copy + Hash + Eq> OctTree<T> {
             let aabb = node.boundary;
             let aabb_pos = node.centre;
 
-            if shapes::aabb_plane_are_intersecting(&aabb, aabb_pos, plane, plane_pos) {
+            if contact_generators::aabb_and_plane_in_contact(&aabb, aabb_pos, plane, plane_pos) {
                 // collect data entries.
                 for d in node.data.iter() {
                     result.push(*d);
@@ -242,6 +236,8 @@ impl<T: Copy + Hash + Eq> OctTree<T> {
 
         result
     }
+
+    // ITERATORS
 
     /// Returns a custom iterator that performs a preorder traversal of the tree. The 'next'
     /// function of the iterator must be manually called and passed a reference to the tree, thus
@@ -286,6 +282,8 @@ mod test {
     use rand::prelude::*;
 //    use specs::world::Index;
     use super::*;
+
+    use crate::constants;
 
     /// Fills every node in the tree, down to the given depth, with a single u32 data entry
     /// associated with a centred shape (relative to each node).
@@ -430,7 +428,7 @@ mod test {
         let bounding_box = Aabb3D::new(50.0, 50.0, 50.0);
         let centre = DVec3::new(50.0, 50.0, 50.0);
 
-        let mut qt_1: OctTree<usize> = OctTree::new();
+        let mut qt_1: OctTree<usize> = OctTree::new(constants::MAX_OCT_TREE_DEPTH);
         qt_1.initialize(centre, bounding_box);
 
         let radius = 1.0;
@@ -466,7 +464,7 @@ mod test {
         }
 
         // starting at the root, get the child octant index for each sphere.
-        let root_idx = qt_1.get_root_idx();
+        let root_idx = qt_1.root;
 
         // check spheres enclosed within an octant return the correct index.
         let mut indices_enclosed: Vec<usize> = vec![];
@@ -497,10 +495,10 @@ mod test {
         let bounding_box = Aabb3D::new(25.0, 25.0, 25.0);
         let centre = DVec3::new(75.0, 75.0, 75.0);
 
-        let mut qt_2: OctTree<usize> = OctTree::new();
+        let mut qt_2: OctTree<usize> = OctTree::new(constants::MAX_OCT_TREE_DEPTH);
         qt_2.initialize(centre, bounding_box);
 
-        let root_idx = qt_2.get_root_idx();
+        let root_idx = qt_2.root;
 
         // should be wholly contained in octant 2.
         let child_octant_enc = qt_2.calc_child_octant_idx(
@@ -527,7 +525,7 @@ mod test {
         let bounding_box = Aabb3D::new(50.0, 50.0, 50.0);
         let centre = DVec3::new(50.0, 50.0, 50.0);
 
-        let mut qt = OctTree::new();
+        let mut qt = OctTree::new(constants::MAX_OCT_TREE_DEPTH);
         qt.initialize(centre, bounding_box);
 
         // fill with random data
@@ -589,7 +587,7 @@ mod test {
         let bounding_box = Aabb3D::new(50.0, 50.0, 50.0);
         let centre = DVec3::new(50.0, 50.0, 50.0);
 
-        let mut qt = OctTree::new();
+        let mut qt = OctTree::new(constants::MAX_OCT_TREE_DEPTH);
         qt.initialize(centre, bounding_box);
 
         fill_tree(&mut qt, 100.0, 5);  // complete tree filled down to max depth.
@@ -617,7 +615,7 @@ mod test {
         // check that nodes are retrieved in the correct order.
 
         // tree filled down to depth 2 only.
-        qt = OctTree::new();
+        qt = OctTree::new(constants::MAX_OCT_TREE_DEPTH);
         qt.initialize(centre, bounding_box);
 
         fill_tree(&mut qt, 100.0, 2);

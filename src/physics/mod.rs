@@ -23,6 +23,7 @@ pub mod prelude {
     #[doc(hidden)]
     pub use super::components::{
         AngularVelocity,
+        Collider,
         Drag,
         Force,
         Gravity,

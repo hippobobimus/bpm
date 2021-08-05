@@ -5,9 +5,11 @@ use crate::{
     physics::systems::collision_detection::contact_generation::contact::Contact,
 };
 
+// Boolean queries
+
 /// Evaluates whether the axis-aligned bounding box centred at the given position and the plane
 /// containing the given point intersect.
-pub fn aabb_plane_are_intersecting(a: &Aabb3D, a_pos: DVec3, p: &Plane, p_pos: DVec3) -> bool {
+pub fn aabb_and_plane_in_contact(a: &Aabb3D, a_pos: DVec3, p: &Plane, p_pos: DVec3) -> bool {
     // Test separating axis that intersects aabb centre and is parallel to plane normal;
     // L(t) = a.centre + t * p.normal.
 
@@ -20,6 +22,8 @@ pub fn aabb_plane_are_intersecting(a: &Aabb3D, a_pos: DVec3, p: &Plane, p_pos: D
     // consider the negative half-space behind the plane to be solid.
     dist <= r
 }
+
+// Generators
 
 ///
 pub fn sphere_and_sphere(s1: &Sphere, pos_1: DVec3, s2: &Sphere, pos_2: DVec3) -> Option<Contact> {
