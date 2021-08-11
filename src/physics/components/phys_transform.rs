@@ -13,24 +13,42 @@ pub struct PhysTransform {
 
 impl PhysTransform {
     //TODO normalize rotation Quaternion?
+    pub const IDENTITY: Self = Self {
+        translation: DVec3::ZERO,
+        rotation: DQuat::IDENTITY,
+        matrix: DMat4::IDENTITY,
+    };
+
+    // Instantiation
+
+    pub fn from_rotation_translation(rotation: DQuat, translation: DVec3) -> Self {
+        let mut result = Self {
+            rotation: rotation.normalize(),
+            translation,
+            ..Default::default()
+        };
+        result.compute_matrix();
+        result
+    }
+
+    pub fn from_rotation(rotation: DQuat) -> Self {
+        Self::from_rotation_translation(rotation, DVec3::ZERO)
+    }
+
+    pub fn from_translation(translation: DVec3) -> Self {
+        Self::from_rotation_translation(DQuat::IDENTITY, translation)
+    }
 
     pub fn from_xyz(x: f64, y: f64, z: f64) -> Self {
         Self::from_translation(DVec3::new(x, y, z))
     }
 
-    pub fn from_translation(translation: DVec3) -> Self {
-        Self {
-            translation,
-            ..Default::default()
-        }
-    }
+    // Getters
 
-    pub fn identity() -> Self {
-        Self {
-            translation: DVec3::ZERO,
-            rotation: DQuat::IDENTITY,
-            matrix: DMat4::IDENTITY,
-        }
+    /// Returns the transformed x, y or z axis corresponding to the given index in the
+    /// tranform matrix. (0 = x, 1 = y, 2 = z).
+    pub fn axis(&self, index: usize) -> DVec3 {
+        self.matrix.col(index).truncate()
     }
 
     pub fn rotation(&self) -> DQuat {
@@ -45,9 +63,22 @@ impl PhysTransform {
         self.matrix
     }
 
+    // Misc
+
+    pub fn mul_vec3(&self, value: DVec3) -> DVec3 {
+        value = self.rotation * value;
+        value += self.translation;
+        value
+    }
+
+    // Update
+
+    // TODO keep this or move to expiry methodology?
     pub fn calc_derived_data(&mut self) {
         self.compute_matrix();
     }
+
+    // Helpers
 
     fn compute_matrix(&mut self) {
         self.matrix = DMat4::from_rotation_translation(self.rotation, self.translation);
@@ -56,6 +87,6 @@ impl PhysTransform {
 
 impl Default for PhysTransform {
     fn default() -> Self {
-        Self::identity()
+        Self::IDENTITY
     }
 }

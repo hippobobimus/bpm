@@ -116,7 +116,9 @@ impl<T: Copy + Hash + Eq> OctTree<T> {
             None => return, // no data to remove.
         };
 
+        // remove from node and map.
         self.arena[*node_idx].data.remove(&data);
+        self.data_node_map.remove(&data);
     }
 
     // TODO could be optimised to make better use of the knowledge of where the data is stored in

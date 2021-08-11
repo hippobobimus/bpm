@@ -12,7 +12,7 @@ pub struct Plane {
 impl Plane {
     /// Creates a new infinite plane with the given vector normal.
     pub fn new(normal: DVec3) -> Self {
-        Self { normal }
+        Self { normal: normal.normalize() }
     }
 
     /// Returns a reference to the vector normal of the plane.
