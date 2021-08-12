@@ -27,7 +27,7 @@ pub fn aabb_and_plane_in_contact(a: &Aabb3D, a_pos: DVec3, p: &Plane, p_pos: DVe
 // Generators
 
 /// Evaluates two spheres for intersection, generating a Contact if they are found to be
-/// intersecting.
+/// intersecting. Contact normal is from sphere 1 to sphere 2.
 pub fn sphere_and_sphere(
     s1: &Sphere,
     s2: &Sphere,
@@ -53,7 +53,7 @@ pub fn sphere_and_sphere(
 }
 
 /// Evaluates a sphere and half-space for intersection, generating a Contact if they are found to
-/// be intersecting.
+/// be intersecting. The contact normal is the half-space normal.
 pub fn sphere_and_half_space(
     s: &Sphere,
     p: &Plane,
@@ -76,7 +76,7 @@ pub fn sphere_and_half_space(
 }
 
 /// Evaluates a cuboid and sphere for intersection, generating a Contact if they are found to be
-/// intersecting.
+/// intersecting. Contact normal is taken from a sphere face normal.
 pub fn cuboid_and_sphere(
     c: &Cuboid,
     s: &Sphere,
@@ -95,7 +95,7 @@ pub fn cuboid_and_sphere(
         return None;
     }
 
-    // normal from sphere centre to closest point on cuboid.
+    // Normal from sphere centre to closest point on cuboid.
     let normal = (closest_point - s_centre).normalize();
 
     Some(Contact {
@@ -106,7 +106,7 @@ pub fn cuboid_and_sphere(
 }
 
 /// Evaluates a cuboid and half-space for intersection, generating Contact(s) if they are found to
-/// be intersecting.
+/// be intersecting. Contact normal is the plane normal.
 pub fn cuboid_and_half_space(
     c: &Cuboid,
     p: &Plane,
@@ -446,10 +446,122 @@ mod test {
 
     #[test]
     fn test_sphere_and_half_space() {
+        let r = 1.0;
+        let s = Sphere::new(r);
+
+        let normal = DVec3::Y;
+        let p = Plane::new(normal);
+
+        let p_transform = PhysTransform::IDENTITY;
+
+        // NO PENETRATION.
+        let s_transform = PhysTransform::from_translation(
+            DVec3::new(0.0, r + 0.001, 0.0),
+        );
+        let contact = sphere_and_half_space(&s, &p, &s_transform, &p_transform);
+
+        assert!(contact.is_none());
+
+        // PENETRATION.
+        let expected_penetration = 0.0005;
+        let expected_contact_point = DVec3::ZERO;
+        let expected_normal = DVec3::Y;
+
+        let s_transform = PhysTransform::from_translation(
+            DVec3::new(0.0, r - expected_penetration, 0.0),
+        );
+        let contact = sphere_and_half_space(&s, &p, &s_transform, &p_transform).unwrap();
+
+        println!("Contact: {:?}", contact);
+
+        assert!((expected_normal.x - contact.normal.x).abs() < EPSILON);
+        assert!((expected_normal.y - contact.normal.y).abs() < EPSILON);
+        assert!((expected_normal.z - contact.normal.z).abs() < EPSILON);
+        assert!((expected_penetration - contact.penetration).abs() < EPSILON);
+        assert!((expected_contact_point.x - contact.point.x).abs() < EPSILON);
+        assert!((expected_contact_point.y - contact.point.y).abs() < EPSILON);
+        assert!((expected_contact_point.z - contact.point.z).abs() < EPSILON);
     }
 
     #[test]
     fn test_cuboid_and_sphere() {
+        let extents = DVec3::new(3.0, 3.0, 3.0);
+        let c = Cuboid::new(extents);
+
+        let c_transform = PhysTransform::IDENTITY;
+
+        let r = 1.0;
+        let s = Sphere::new(r);
+
+        // NO PENETRATION.
+        let s_transform = PhysTransform::from_translation(
+            DVec3::new(0.0, r + 3.0 + 0.001, 0.0),
+        );
+        let contact = cuboid_and_sphere(&c, &s, &c_transform, &s_transform);
+
+        assert!(contact.is_none());
+
+        // FACE-FACE PENETRATION.
+        let expected_penetration = 0.0005;
+        let expected_contact_point = DVec3::new(0.0, 3.0, 0.0);
+        let expected_normal = -DVec3::Y;
+
+        let s_transform = PhysTransform::from_translation(
+            DVec3::new(0.0, r + 3.0 - expected_penetration, 0.0),
+        );
+        let contact = cuboid_and_sphere(&c, &s, &c_transform, &s_transform).unwrap();
+
+        println!("Contact: {:?}", contact);
+
+        assert!((expected_normal.x - contact.normal.x).abs() < EPSILON);
+        assert!((expected_normal.y - contact.normal.y).abs() < EPSILON);
+        assert!((expected_normal.z - contact.normal.z).abs() < EPSILON);
+        assert!((expected_penetration - contact.penetration).abs() < EPSILON);
+        assert!((expected_contact_point.x - contact.point.x).abs() < EPSILON);
+        assert!((expected_contact_point.y - contact.point.y).abs() < EPSILON);
+        assert!((expected_contact_point.z - contact.point.z).abs() < EPSILON);
+
+        // FACE-EDGE PENETRATION.
+        let expected_penetration = 0.0005;
+        let expected_contact_point = DVec3::new(3.0, 3.0, 0.0);
+        let expected_normal = -DVec3::new(3.0, 3.0, 0.0).normalize();
+
+        let d = 3.0 + 2.0_f64.sqrt() * 0.5 * (r - expected_penetration);
+        let s_transform = PhysTransform::from_translation(
+            DVec3::new(d, d, 0.0),
+        );
+        let contact = cuboid_and_sphere(&c, &s, &c_transform, &s_transform).unwrap();
+
+        println!("Contact: {:?}", contact);
+
+        assert!((expected_normal.x - contact.normal.x).abs() < EPSILON);
+        assert!((expected_normal.y - contact.normal.y).abs() < EPSILON);
+        assert!((expected_normal.z - contact.normal.z).abs() < EPSILON);
+        assert!((expected_penetration - contact.penetration).abs() < EPSILON);
+        assert!((expected_contact_point.x - contact.point.x).abs() < EPSILON);
+        assert!((expected_contact_point.y - contact.point.y).abs() < EPSILON);
+        assert!((expected_contact_point.z - contact.point.z).abs() < EPSILON);
+
+        // FACE-VERTEX PENETRATION.
+        let expected_penetration = 0.0005;
+        let expected_contact_point = DVec3::new(3.0, 3.0, 3.0);
+        let expected_normal = -DVec3::new(3.0, 3.0, 3.0).normalize();
+
+        let d = 3.0 + 3.0_f64.sqrt() * (r - expected_penetration) / 3.0;
+        let s_transform = PhysTransform::from_translation(
+            DVec3::new(d, d, d),
+        );
+        let contact = cuboid_and_sphere(&c, &s, &c_transform, &s_transform).unwrap();
+
+        println!("Contact: {:?}", contact);
+
+        assert!((expected_normal.x - contact.normal.x).abs() < EPSILON);
+        assert!((expected_normal.y - contact.normal.y).abs() < EPSILON);
+        assert!((expected_normal.z - contact.normal.z).abs() < EPSILON);
+        assert!((expected_penetration - contact.penetration).abs() < EPSILON);
+        assert!((expected_contact_point.x - contact.point.x).abs() < EPSILON);
+        assert!((expected_contact_point.y - contact.point.y).abs() < EPSILON);
+        assert!((expected_contact_point.z - contact.point.z).abs() < EPSILON);
     }
 
     #[test]
