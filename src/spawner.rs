@@ -1,6 +1,6 @@
 use bevy::{
     prelude::*,
-    math::{DQuat, DVec3},
+    math::DVec3,
 };
 use rand::prelude::*;
 
@@ -16,10 +16,10 @@ pub struct SpawnerPlugin;
 
 impl Plugin for SpawnerPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app//.add_startup_system(spawn_player.system())
-            .add_startup_system(spawn_cuboids.system());
-            //.add_startup_system(spawn_fan.system())
-            //.add_startup_system(spawn_spheres.system());
+        app.add_startup_system(spawn_player.system())
+            .add_startup_system(spawn_cuboids.system())
+            .add_startup_system(spawn_fan.system())
+            .add_startup_system(spawn_spheres.system());
     }
 }
 
@@ -86,7 +86,7 @@ fn spawn_cuboids(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let qty = 0;
+    let qty = 10;
     let mass = 10.0;
     let extents: DVec3 = DVec3::new(1.0, 1.0, 1.0);
 
@@ -112,50 +112,6 @@ fn spawn_cuboids(
                 PhysTransform::from_xyz(x, y, z),
         ));
     }
-
-    let expected_penetration = 1.0;
-    //let rotation = DQuat::from_rotation_z(-0.5 * std::f64::consts::PI);
-    let rotation = DQuat::from_rotation_z(-0.5 * std::f64::consts::PI)
-        .mul_quat(
-            DQuat::from_rotation_y(-0.25 * std::f64::consts::PI
-    ));
-    let rotation = DQuat::from_rotation_y(-0.25 * std::f64::consts::PI)
-        .mul_quat(
-            DQuat::from_rotation_z(-0.5 * std::f64::consts::PI
-    ));
-    let rotation = DQuat::from_axis_angle(DVec3::new(1.0, 0.0, -1.0).normalize(), -0.25 * std::f64::consts::PI)
-        .mul_quat(
-            DQuat::from_rotation_y(-0.25 * std::f64::consts::PI
-    ));
-    let rotation = DQuat::from_rotation_y(-0.25 * std::f64::consts::PI)
-        .mul_quat(
-            DQuat::from_axis_angle(DVec3::new(1.0, 0.0, -1.0).normalize(), -0.25 * std::f64::consts::PI)
-    );
-    let rotation = DQuat::from_xyzw(0.354, -0.354, -0.146, 0.854);
-    let c_transform = PhysTransform::from_rotation_translation(
-        rotation,
-        //DVec3::new(0.0, 0.0, 0.0),
-        DVec3::new(0.0, 3.0 * 3.0_f64.sqrt() - expected_penetration, 0.0),
-    );
-    commands.spawn_bundle(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Box::new(
-            30.0,
-            30.0,
-            30.0,
-        ))),
-        material: materials.add(Color::rgb(0.2, 0.7, 0.2).into()),
-        transform: Transform {
-            rotation: c_transform.rotation.as_f32(),
-            translation: c_transform.translation.as_f32(), 
-            ..Default::default()
-        },
-        ..Default::default()
-    })
-    .insert_bundle(PhysicsBundle::cuboid(
-            mass,
-            extents,
-            c_transform,
-    ));
 }
 
 fn spawn_fan(

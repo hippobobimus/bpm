@@ -30,21 +30,24 @@ pub fn aabb_and_plane_in_contact(a: &Aabb3D, a_pos: DVec3, p: &Plane, p_pos: DVe
 /// intersecting.
 pub fn sphere_and_sphere(
     s1: &Sphere,
-    pos_1: DVec3,
     s2: &Sphere,
-    pos_2: DVec3
+    s1_transform: &PhysTransform,
+    s2_transform: &PhysTransform,
 ) -> Option<Contact> {
-    let midline = pos_1 - pos_2;
-    let length = midline.length();
+    let s1_centre = s1_transform.translation();
+    let s2_centre = s2_transform.translation();
+    let midline = s2_centre - s1_centre;
+    let d = midline.length();
+    let sum_of_radii = s1.radius() + s2.radius();
 
-    if length <= 0.0 || length >= s1.radius() + s2.radius() {
+    if d <= 0.0 || d >= sum_of_radii {
         return None;
     }
 
     // already verified not of length 0 so can normalize.
     let normal = midline.normalize();
-    let point = pos_1 + midline * 0.5;
-    let penetration = (s1.radius() + s2.radius()) - length;
+    let point = s1_centre + midline * 0.5;
+    let penetration = sum_of_radii - d;
 
     Some(Contact { normal, penetration, point })
 }
@@ -53,11 +56,13 @@ pub fn sphere_and_sphere(
 /// be intersecting.
 pub fn sphere_and_half_space(
     s: &Sphere,
-    s_pos: DVec3,
     p: &Plane,
-    p_pos: DVec3
+    s_transform: &PhysTransform,
+    p_transform: &PhysTransform
 ) -> Option<Contact> {
-    let d = p.shortest_distance_to(p_pos, s_pos);
+    let s_centre = s_transform.translation();
+    let p_point = p_transform.translation();
+    let d = p.shortest_distance_to(p_point, s_centre);
 
     if d >= s.radius() {
         return None;
@@ -65,12 +70,72 @@ pub fn sphere_and_half_space(
 
     let normal = *p.normal();
     let penetration = s.radius() - d;
-    let point = p.closest_point_to(p_pos, s_pos);
+    let point = p.closest_point_to(p_point, s_centre);
 
     Some(Contact { normal, penetration, point })
 }
 
-///
+/// Evaluates a cuboid and sphere for intersection, generating a Contact if they are found to be
+/// intersecting.
+pub fn cuboid_and_sphere(
+    c: &Cuboid,
+    s: &Sphere,
+    c_transform: &PhysTransform,
+    s_transform: &PhysTransform,
+) -> Option<Contact> {
+    let c_centre = c_transform.translation();
+    let s_centre = s_transform.translation();
+
+    let closest_point = c.closest_point_to(c_centre, s_centre);
+
+    let shortest_dist = (closest_point - s_transform.translation()).length() - s.radius();
+
+    // Check whether they are in contact.
+    if shortest_dist > 0.0 {
+        return None;
+    }
+
+    // normal from sphere centre to closest point on cuboid.
+    let normal = (closest_point - s_centre).normalize();
+
+    Some(Contact {
+        normal,
+        penetration: shortest_dist.abs(),
+        point: closest_point,
+    })
+}
+
+/// Evaluates a cuboid and half-space for intersection, generating Contact(s) if they are found to
+/// be intersecting.
+pub fn cuboid_and_half_space(
+    c: &Cuboid,
+    p: &Plane,
+    c_transform: &PhysTransform,
+    p_transform: &PhysTransform,
+) -> Option<Vec<Contact>> {
+    let mut contacts = vec![];
+    let p_pos = p_transform.translation();
+
+    for vertex_position in c.vertices(c_transform).iter() {
+        let vertex_dist = p.shortest_distance_to(p_pos, *vertex_position);
+        if vertex_dist <= 0.0 {
+            let normal = *p.normal();
+            // contact point is mid-point between vertex and plane.
+            let point = *vertex_position + normal * (vertex_dist.abs() * 0.5);
+            let penetration = vertex_dist.abs();
+
+            contacts.push(Contact {normal, penetration, point });
+        }
+    }
+
+    if contacts.is_empty() {
+        return None;
+    }
+    Some(contacts)
+}
+
+/// Evaluates a two cuboids for intersection, generating a Contact if they are found to
+/// be intersecting.
 pub fn cuboid_and_cuboid(
     c1: &Cuboid,
     c2: &Cuboid,
@@ -130,39 +195,28 @@ pub fn cuboid_and_cuboid(
     let contact = if case < 3 {
         // face of cuboid 1, vertex of cuboid 2.
         let axis_idx = case;
-        calc_face_vertex_contact(c2, c1_transform, c2_transform, axis_idx, centre_to_centre, penetration)
+        calc_cuboid_face_vertex_contact(c2, c1_transform, c2_transform, axis_idx,
+                                        centre_to_centre, penetration)
     } else if case < 6 {
         // face of cuboid 2, vertex of cuboid 1.
         let axis_idx = case - 3;
-        calc_face_vertex_contact(c1, c2_transform, c1_transform, axis_idx, -centre_to_centre, penetration)
+        calc_cuboid_face_vertex_contact(c1, c2_transform, c1_transform, axis_idx,
+                                        -centre_to_centre, penetration)
     } else if case < 16 {
         // edge-edge.
-    // TODO
         let axis_idx_1 = (case - 6) / 3;
         let axis_idx_2 = (case - 6) % 3;
-        calc_edge_edge_contact(c1, c2, c1_transform, c2_transform, axis_idx_1, axis_idx_2,
-                               centre_to_centre, penetration)
-
+        calc_cuboid_edge_edge_contact(c1, c2, c1_transform, c2_transform, axis_idx_1, axis_idx_2,
+                                      centre_to_centre, penetration)
     } else {
-        panic!("incorrect best case enumeration ({})!", case);
+        panic!("incorrect case enumeration ({})!", case);
     };
 
     Some(contact)
 }
 
-///// The type of contact between two cuboids. 
-//enum CuboidsContactCase {
-//    // Contains the index of the axis the collision is on.
-//    FaceVertex(usize),
-//    // Contains the index of the axis the collision is on.
-//    VertexFace(usize),
-//    //
-//    EdgeEdge(usize, usize),
-//    NoContact,
-//}
-
 /// Generates the contact data when edges from each cuboid are in contact.
-fn calc_edge_edge_contact(
+fn calc_cuboid_edge_edge_contact(
     c1: &Cuboid,
     c2: &Cuboid,
     c1_transform: &PhysTransform,
@@ -206,7 +260,7 @@ fn calc_edge_edge_contact(
     c2_point = c2_transform.mul_vec3(c2_point);
 
     // Get closest point between the two edges.
-    let contact_point = calc_contact_point(c1_axis, c2_axis, c1_point, c2_point);
+    let contact_point = calc_point_between_skew_lines(c1_axis, c2_axis, c1_point, c2_point);
 
     Contact {
         normal,
@@ -217,7 +271,7 @@ fn calc_edge_edge_contact(
 
 /// Returns the point halfway between the points of closest approach on a pair of skew lines, given
 /// a point and direction for each line.
-fn calc_contact_point(
+fn calc_point_between_skew_lines(
     d1: DVec3,
     d2: DVec3,
     p1: DVec3,
@@ -259,7 +313,7 @@ fn calc_contact_point(
 }
 
 /// Generates the contact data when a vertex from cuboid 2 is in contact with a face of cuboid 1.
-fn calc_face_vertex_contact(
+fn calc_cuboid_face_vertex_contact(
     c2: &Cuboid,
     c1_transform: &PhysTransform,
     c2_transform: &PhysTransform,
@@ -296,6 +350,10 @@ fn calc_face_vertex_contact(
     }
 }
 
+/// Finds the penetration of the projections of the two cuboids on the given axis. If a penetration
+/// is found it is compared to the current penetration value and, if it is lower, replaces it and
+/// marks itself as the best case. A boolean is returned indicating whether a penetration value was
+/// or was not found.
 fn check_axis(
     c1: &Cuboid,
     c2: &Cuboid,
@@ -339,70 +397,60 @@ fn penetration_on_axis(
     Some(overlap)
 }
 
-///
-pub fn cuboid_and_sphere(
-    c: &Cuboid,
-    c_transform: &PhysTransform,
-    s: &Sphere,
-    s_transform: &PhysTransform,
-) -> Option<Contact> {
-    let c_centre = c_transform.translation();
-    let s_centre = s_transform.translation();
-
-    let closest_point = c.closest_point_to(c_centre, s_centre);
-
-    let shortest_dist = (closest_point - s_transform.translation()).length() - s.radius();
-
-    // Check whether they are in contact.
-    if shortest_dist > 0.0 {
-        return None;
-    }
-
-    // normal from sphere centre to closest point on cuboid.
-    let normal = (closest_point - s_centre).normalize();
-
-    Some(Contact {
-        normal,
-        penetration: shortest_dist.abs(),
-        point: closest_point,
-    })
-}
-
-///
-pub fn cuboid_and_half_space(
-    c: &Cuboid,
-    c_transform: &PhysTransform,
-    p: &Plane,
-    p_transform: &PhysTransform,
-) -> Option<Vec<Contact>> {
-    let mut contacts = vec![];
-    let p_pos = p_transform.translation();
-
-    for vertex_position in c.vertices(c_transform).iter() {
-        let vertex_dist = p.shortest_distance_to(p_pos, *vertex_position);
-        if vertex_dist <= 0.0 {
-            let normal = *p.normal();
-            // contact point is mid-point between vertex and plane.
-            let point = *vertex_position + normal * (vertex_dist.abs() * 0.5);
-            let penetration = vertex_dist.abs();
-
-            contacts.push(Contact {normal, penetration, point });
-        }
-    }
-
-    if contacts.is_empty() {
-        return None;
-    }
-    Some(contacts)
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
 
     use bevy::math::DQuat;
 
-    const EPSILON: f64 = 0.01;
+    const EPSILON: f64 = 0.000001;
+
+    #[test]
+    fn test_sphere_and_sphere() {
+        let r1 = 1.0;
+        let r2 = 1.0;
+
+        let s1 = Sphere::new(r1);
+        let s2 = Sphere::new(r2);
+
+        let s1_transform = PhysTransform::IDENTITY;
+
+        // NO PENETRATION.
+        let s2_transform = PhysTransform::from_translation(
+            DVec3::new(0.0, r1 + r2 + 0.001, 0.0),
+        );
+        let contact = sphere_and_sphere(&s1, &s2, &s1_transform, &s2_transform);
+
+        assert!(contact.is_none());
+
+        // PENETRATION.
+        let expected_penetration = 0.0005;
+        let expected_contact_point = DVec3::new(0.0, 0.99975, 0.0);
+        let expected_normal = DVec3::Y;
+
+        let s2_transform = PhysTransform::from_translation(
+            DVec3::new(0.0, r1 + r2 - expected_penetration, 0.0),
+        );
+        let contact = sphere_and_sphere(&s1, &s2, &s1_transform, &s2_transform).unwrap();
+
+        println!("Contact: {:?}", contact);
+
+        assert!((expected_normal.x - contact.normal.x).abs() < EPSILON);
+        assert!((expected_normal.y - contact.normal.y).abs() < EPSILON);
+        assert!((expected_normal.z - contact.normal.z).abs() < EPSILON);
+        assert!((expected_penetration - contact.penetration).abs() < EPSILON);
+        assert!((expected_contact_point.x - contact.point.x).abs() < EPSILON);
+        assert!((expected_contact_point.y - contact.point.y).abs() < EPSILON);
+        assert!((expected_contact_point.z - contact.point.z).abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_sphere_and_half_space() {
+    }
+
+    #[test]
+    fn test_cuboid_and_sphere() {
+    }
 
     #[test]
     fn test_cuboid_and_half_space() {
@@ -417,7 +465,7 @@ mod test {
         let c_transform = PhysTransform::from_translation(
             DVec3::new(0.0, 4.0, 0.0),
         );
-        let contacts = cuboid_and_half_space(&c, &c_transform, &p, &p_transform);
+        let contacts = cuboid_and_half_space(&c, &p, &c_transform, &p_transform);
         assert!(contacts.is_none());
 
         // FOUR PENETRATING VERTICES.
@@ -426,7 +474,7 @@ mod test {
         );
         let expected_penetration = 2.0;
 
-        let contacts = cuboid_and_half_space(&c, &c_transform, &p, &p_transform).unwrap();
+        let contacts = cuboid_and_half_space(&c, &p, &c_transform, &p_transform).unwrap();
 
         assert_eq!(4, contacts.len());
         for contact in contacts.iter() {
@@ -453,7 +501,7 @@ mod test {
             DVec3::new(0.0, 3.0 * 2.0_f64.sqrt() - expected_penetration, 0.0),
         );
 
-        let contacts = cuboid_and_half_space(&c, &c_transform, &p, &p_transform).unwrap();
+        let contacts = cuboid_and_half_space(&c, &p, &c_transform, &p_transform).unwrap();
 
         assert_eq!(2, contacts.len());
         for contact in contacts.iter() {
@@ -477,7 +525,7 @@ mod test {
         let translation = DVec3::new(0.0, 3.0 * 3.0_f64.sqrt() - expected_penetration, 0.0);
         let c_transform = PhysTransform::from_rotation_translation(rotation, translation);
 
-        let contacts = cuboid_and_half_space(&c, &c_transform, &p, &p_transform).unwrap();
+        let contacts = cuboid_and_half_space(&c, &p, &c_transform, &p_transform).unwrap();
 
         assert_eq!(1, contacts.len());
         assert_eq!(normal, contacts[0].normal);
@@ -485,5 +533,9 @@ mod test {
         assert!((contacts[0].point.x - 0.0).abs() < EPSILON);
         assert!((contacts[0].point.y - -expected_penetration / 2.0).abs() < EPSILON);
         assert!((contacts[0].point.z - 0.0).abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_cuboid_and_cuboid() {
     }
 }

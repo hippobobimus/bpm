@@ -65,7 +65,7 @@ impl PhysTransform {
 
     // Misc
 
-    pub fn mul_vec3(&self, value: DVec3) -> DVec3 {
+    pub fn mul_vec3(&self, mut value: DVec3) -> DVec3 {
         value = self.rotation * value;
         value += self.translation;
         value
