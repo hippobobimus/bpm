@@ -5,9 +5,8 @@ use bevy::{
 use rand::prelude::*;
 
 use crate::{
-    components::*,
     physics::prelude::*,
-    //constants,
+    user_interaction::{KeyboardControlled, Player},
 };
 
 // Plugin

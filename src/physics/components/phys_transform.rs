@@ -2,8 +2,9 @@ use bevy::{
     math::{DMat4, DQuat, DVec3},
 };
 
-/// Duplication of the built-in Bevy Transform component with a higher precision, for use
-/// internally within the physics engine's calculations.
+/// Duplication of the built-in Bevy Transform component with a higher float precision (64 bit),
+/// for use internally within the physics engine's calculations.
+#[derive(Debug)]
 pub struct PhysTransform {
     pub rotation: DQuat,
     pub translation: DVec3,
@@ -12,15 +13,13 @@ pub struct PhysTransform {
 }
 
 impl PhysTransform {
-    //TODO normalize rotation Quaternion?
     pub const IDENTITY: Self = Self {
         translation: DVec3::ZERO,
         rotation: DQuat::IDENTITY,
         matrix: DMat4::IDENTITY,
     };
 
-    // Instantiation
-
+    /// Creates the transform from the given rotation and translation.
     pub fn from_rotation_translation(rotation: DQuat, translation: DVec3) -> Self {
         let mut result = Self {
             rotation: rotation.normalize(),
@@ -31,19 +30,20 @@ impl PhysTransform {
         result
     }
 
+    /// Creates the transform from the given rotation.
     pub fn from_rotation(rotation: DQuat) -> Self {
         Self::from_rotation_translation(rotation, DVec3::ZERO)
     }
 
+    /// Creates the transform from the given translation.
     pub fn from_translation(translation: DVec3) -> Self {
         Self::from_rotation_translation(DQuat::IDENTITY, translation)
     }
 
+    /// Creates the transform from the given translation in x, y and z coordinates.
     pub fn from_xyz(x: f64, y: f64, z: f64) -> Self {
         Self::from_translation(DVec3::new(x, y, z))
     }
-
-    // Getters
 
     /// Returns the transformed x, y or z axis corresponding to the given index in the
     /// tranform matrix. (0 = x, 1 = y, 2 = z).
@@ -51,34 +51,34 @@ impl PhysTransform {
         self.matrix.col(index).truncate()
     }
 
+    /// Returns the rotation as a quaternion.
     pub fn rotation(&self) -> DQuat {
         self.rotation
     }
 
+    /// Returns the translation vector.
     pub fn translation(&self) -> DVec3 {
         self.translation
     }
 
+    /// Returns the transform matrix. The 'update' function MUST be called beforehand if the
+    /// rotation or translation has changed, otherwise the matrix will be out of date.
     pub fn matrix(&self) -> DMat4 {
         self.matrix
     }
 
-    // Misc
-
+    /// Returns a DVec3 of this transform applied to the given value.
     pub fn mul_vec3(&self, mut value: DVec3) -> DVec3 {
         value = self.rotation * value;
         value += self.translation;
         value
     }
 
-    // Update
-
+    /// Updates the cached transform matrix based on the current rotation and translation.
     // TODO keep this or move to expiry methodology?
-    pub fn calc_derived_data(&mut self) {
+    pub fn update(&mut self) {
         self.compute_matrix();
     }
-
-    // Helpers
 
     fn compute_matrix(&mut self) {
         self.matrix = DMat4::from_rotation_translation(self.rotation, self.translation);

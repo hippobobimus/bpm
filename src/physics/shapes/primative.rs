@@ -3,5 +3,10 @@ use downcast_rs::{
     impl_downcast,
 };
 
-pub trait CollisionPrimative: std::fmt::Debug + Downcast + Send + Sync {}
+use crate::physics::shapes::Sphere;
+
+pub trait CollisionPrimative: std::fmt::Debug + Downcast + Send + Sync {
+    fn bounding_sphere(&self) -> &Sphere;
+}
+
 impl_downcast!(CollisionPrimative);

@@ -3,9 +3,28 @@ use bevy::{
     math::DVec3,
 };
 
-use crate::physics::prelude::*;
+use crate::{
+    constants,
+    physics::components::{
+        AngularVelocity,
+        Collider,
+        Drag,
+        Force,
+        Gravity,
+        InertiaTensor,
+        Mass,
+        Thrust,
+        Torque,
+        PhysTransform,
+        Velocity,
+    },
+    physics::shapes::{
+        Cuboid,
+        Sphere,
+    },
+};
 
-/// A component bundle for 'physics' entities.
+/// A component bundle that adds rigid-body physics to an entity.
 #[derive(Bundle)]
 pub struct PhysicsBundle {
     pub angular_velocity: AngularVelocity,
@@ -21,28 +40,8 @@ pub struct PhysicsBundle {
     pub velocity: Velocity,
 }
 
-impl Default for PhysicsBundle {
-    fn default() -> Self {
-        let mass = 1.0;
-        let radius = 1.0;
-
-        Self {
-            angular_velocity: Default::default(),
-            collider: Collider::new(Sphere::new(radius)),
-            drag: Default::default(),
-            force: Default::default(),
-            gravity: Default::default(),
-            inertia_tensor: InertiaTensor::sphere(mass, radius),
-            mass: Mass::new(1.0),
-            thrust: Default::default(),
-            torque: Default::default(),
-            transform: Default::default(),
-            velocity: Default::default(),
-        }
-    }
-}
-
 impl PhysicsBundle {
+    /// Creates a new PhysicsBundle for a cuboid body with the given mass, transform and extents.
     pub fn cuboid(mass: f64, extents: DVec3, transform: PhysTransform) -> Self {
         Self {
             collider: Collider::new(Cuboid::new(extents)),
@@ -53,6 +52,7 @@ impl PhysicsBundle {
         }
     }
 
+    /// Creates a new PhysicsBundle for a spherical body with the given mass, transform and extents.
     pub fn sphere(mass: f64, radius: f64, transform: PhysTransform) -> Self {
         Self {
             collider: Collider::new(Sphere::new(radius)),
@@ -60,6 +60,24 @@ impl PhysicsBundle {
             mass: Mass::new(mass),
             transform,
             ..Default::default()
+        }
+    }
+}
+
+impl Default for PhysicsBundle {
+    fn default() -> Self {
+        Self {
+            angular_velocity: Default::default(),
+            collider: Collider::new(Sphere::new(constants::DEFAULT_RADIUS)),
+            drag: Default::default(),
+            force: Default::default(),
+            gravity: Default::default(),
+            inertia_tensor: InertiaTensor::sphere(constants::DEFAULT_MASS, constants::DEFAULT_RADIUS),
+            mass: Mass::new(1.0),
+            thrust: Default::default(),
+            torque: Default::default(),
+            transform: Default::default(),
+            velocity: Default::default(),
         }
     }
 }

@@ -2,33 +2,24 @@ use bevy::math::{DMat3, DMat4, DVec3};
 
 use crate::constants;
 
+#[derive(Debug)]
+/// A component that represents the inertia tensor of a body.
 pub struct InertiaTensor {
     tensor: DMat3,
     inverse: DMat3,
-    // cache rather than recalculate unnecessarily
+    // cache global inverse rather than recalculate unnecessarily
     inverse_global: DMat3,
 }
 
-impl Default for InertiaTensor {
-    fn default() -> Self {
-        Self::sphere(constants::DEFAULT_MASS, constants::DEFAULT_RADIUS)
-    }
-}
-
 impl InertiaTensor {
-    pub fn new(inertia_tensor: DMat3) -> Self {
+    /// Creates a new InertiaTensor component from the given tensor with respect to local body
+    /// coords.
+    pub fn new(tensor: DMat3) -> Self {
         Self {
-            tensor: inertia_tensor,
-            inverse: inertia_tensor.inverse(),
+            tensor: tensor,
+            inverse: tensor.inverse(),
             inverse_global: DMat3::ZERO,
         }
-    }
-
-    /// Instantiates an inertia tensor for a solid sphere with the given mass and radius.
-    pub fn sphere(mass: f64, radius: f64) -> Self {
-        let element = 0.4 * mass * radius.powi(2);
-
-        Self::new(DMat3::from_diagonal(DVec3::new(element, element, element)))
     }
 
     /// Instantiates an inertia tensor for a cuboid (any 6-sided rectangular object with constant
@@ -43,25 +34,40 @@ impl InertiaTensor {
         )))
     }
 
-    // TODO inertia tensors for other standard shapes.
-    // Cuboid, ellipsoid, shell-sphere, cylinder, cone, hemisphere...
+    /// Instantiates an inertia tensor for a solid sphere with the given mass and radius.
+    pub fn sphere(mass: f64, radius: f64) -> Self {
+        let element = 0.4 * mass * radius.powi(2);
 
+        Self::new(DMat3::from_diagonal(DVec3::new(element, element, element)))
+    }
+
+    // TODO inertia tensors for other standard shapes.
+    // Ellipsoid, shell-sphere, cylinder, cone, hemisphere...
+
+    /// Returns the inertia tensor with respect to local body coords.
     pub fn tensor(&self) -> &DMat3 {
         &self.tensor
     }
 
+    /// Returns the inverse inertia tensor with respect to local body coords.
     pub fn inverse(&self) -> &DMat3 {
         &self.inverse
     }
 
-    /// The inverse inertia tensor in global coordinates.
+    /// Returns the inverse inertia tensor with respect to local body coords.
+    /// The 'update' function MUST be called before retrieval if the body has changed position or
+    /// orientation, otherwise the value of the inverse inertia tensor in global coords will be out
+    /// of date.
     pub fn inverse_global(&self) -> &DMat3 {
         &self.inverse_global
     }
 
-    /// Transforms the inverse inertia tensor into a new basis using the given transform matrix and
-    /// stores it in the inverse_global field.
-    fn transform_inertia_tensor(&mut self, transform_matrix: &DMat4) {
+    /// Updates cached values. Must be run when the associated entity is translated or rotated
+    /// within global coordinate space to ensure an accurate value for the inverse inertia tensor
+    /// in global coords.
+    pub fn update(&mut self, transform_matrix: &DMat4) {
+        // Transform the local tensor into the global basis using the given transform matrix.
+
         // TODO will be able to simplify to the below when bevy uses a more recent version of the
         // glam crate.
         //let tm3 = DMat3::from_mat4(transform_matrix);
@@ -75,11 +81,10 @@ impl InertiaTensor {
 
         self.inverse_global = tm3 * self.inverse * tm3.inverse();
     }
+}
 
-    /// Updates cached values. Must be run when the associated entity is translated or rotated
-    /// within global coordinate space to ensure an accurate value for the inverse inertia tensor
-    /// in global coords.
-    pub fn update(&mut self, transform_matrix: &DMat4) {
-        self.transform_inertia_tensor(transform_matrix);
+impl Default for InertiaTensor {
+    fn default() -> Self {
+        Self::sphere(constants::DEFAULT_MASS, constants::DEFAULT_RADIUS)
     }
 }

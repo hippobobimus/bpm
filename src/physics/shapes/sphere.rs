@@ -9,7 +9,9 @@ pub struct Sphere {
 impl Sphere {
     /// Creates a new sphere with the given radius.
     pub fn new(radius: f64) -> Self {
-        Self { radius }
+        Self {
+            radius,
+        }
     }
 
     /// Returns the radius of the sphere.
@@ -18,4 +20,9 @@ impl Sphere {
     }
 }
 
-impl CollisionPrimative for Sphere {}
+impl CollisionPrimative for Sphere {
+    /// The bounding sphere is the Sphere itself.
+    fn bounding_sphere(&self) -> &Sphere {
+        self
+    }
+}

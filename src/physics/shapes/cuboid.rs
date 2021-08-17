@@ -1,7 +1,10 @@
 use bevy::math::DVec3;
 
 use crate::{
-    physics::shapes::CollisionPrimative,
+    physics::shapes::{
+        CollisionPrimative, 
+        Sphere,
+    },
     physics::components::PhysTransform,
 };
 
@@ -10,12 +13,16 @@ use crate::{
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Cuboid {
     extents: DVec3,
+    bounding_sphere: Sphere,
 }
 
 impl Cuboid {
     /// Creates a new cuboid with the given extents relative to the local body coords.
     pub fn new(extents: DVec3) -> Self {
-        Self { extents }
+        Self {
+            extents,
+            bounding_sphere: Sphere::new(extents.length()),
+        }
     }
 
     /// Returns the extents of the cuboid in local body space.
@@ -51,7 +58,11 @@ impl Cuboid {
     }
 }
 
-impl CollisionPrimative for Cuboid {}
+impl CollisionPrimative for Cuboid {
+    fn bounding_sphere(&self) -> &Sphere {
+        &self.bounding_sphere
+    }
+}
 
 impl Cuboid {
     /// Calculates and returns the closest point on the aabb centred at the given position to the

@@ -61,10 +61,8 @@ impl<T: Copy + Hash + Eq> OctTree<T> {
                 );
 
                 let child_centre = centre + offset;
-                let child_boundary = Aabb3D::new(
-                    boundary.extents().x * 0.5,
-                    boundary.extents().y * 0.5,
-                    boundary.extents().z * 0.5,
+                let child_boundary = Aabb3D::from_dvec3(
+                    boundary.extents().clone() * 0.5,
                 );
 
                 qt.arena[idx].children[*c as usize] = helper(qt,
@@ -98,15 +96,11 @@ impl<T: Copy + Hash + Eq> OctTree<T> {
     // TODO return error if shape outside the bounds of the tree?
     /// Inserts the given data into the tree according to its associated shape and position.
     pub fn insert(&mut self, collider: &Collider, transform: &PhysTransform, data: T) {
-        let is_sphere = collider.0.is::<Sphere>();
-
-        if is_sphere {
-            self.insert_sphere(
-                collider.0.downcast_ref::<Sphere>().unwrap(),
-                transform.translation(),
-                data
-            );
-        }
+        self.insert_sphere(
+            collider.0.bounding_sphere(),
+            transform.translation(),
+            data
+        );
     }
 
     /// Removes the given data entry from the tree, if present.
@@ -203,7 +197,7 @@ impl<T: Copy + Hash + Eq> OctTree<T> {
 
     // QUERIES
 
-    /// Returns all data entries in the quad tree that reside in nodes intersected by the given
+    /// Returns all data entries in the oct-tree that reside in nodes intersected by the given
     /// plane.
     pub fn query_by_plane(&self, plane: &Plane, plane_pos: DVec3) -> Vec<T> {
         // Determines whether the plane intersects the current node and then recursively checks any
@@ -427,7 +421,7 @@ mod test {
     #[test]
     fn test_calc_child_octant_idx() {
         // 100.0 x 100.0 bounding box.
-        let bounding_box = Aabb3D::new(50.0, 50.0, 50.0);
+        let bounding_box = Aabb3D::from_xyz(50.0, 50.0, 50.0);
         let centre = DVec3::new(50.0, 50.0, 50.0);
 
         let mut qt_1: OctTree<usize> = OctTree::new(constants::MAX_OCT_TREE_DEPTH);
@@ -494,7 +488,7 @@ mod test {
         }
 
         // test box with min not at origin: 50 x 50 box
-        let bounding_box = Aabb3D::new(25.0, 25.0, 25.0);
+        let bounding_box = Aabb3D::from_xyz(25.0, 25.0, 25.0);
         let centre = DVec3::new(75.0, 75.0, 75.0);
 
         let mut qt_2: OctTree<usize> = OctTree::new(constants::MAX_OCT_TREE_DEPTH);
@@ -524,7 +518,7 @@ mod test {
     #[test]
     fn test_octtree_construction() {
         // 100.0 x 100.0 bounding box.
-        let bounding_box = Aabb3D::new(50.0, 50.0, 50.0);
+        let bounding_box = Aabb3D::from_xyz(50.0, 50.0, 50.0);
         let centre = DVec3::new(50.0, 50.0, 50.0);
 
         let mut qt = OctTree::new(constants::MAX_OCT_TREE_DEPTH);
@@ -573,12 +567,12 @@ mod test {
         assert!(node.data.contains(&3));
     }
 
-    /// Calculates the total number of nodes that would be present in a complete oct-tree of the
-    /// given depth.
-    ///
-    /// The geometric progression formula used is:
-    ///
-    ///     Sum[k=0..depth]{ 8^k } = (1 - 8^(n+1)) / (1 - 8)
+    // Calculates the total number of nodes that would be present in a complete oct-tree of the
+    // given depth.
+    //
+    // The geometric progression formula used is:
+    //
+    //     Sum[k=0..depth]{ 8^k } = (1 - 8^(n+1)) / (1 - 8)
     fn calc_total_nodes(depth: u32) -> i32 {
         (8_i32.pow(depth + 1) - 1) / 7
     }
@@ -586,7 +580,7 @@ mod test {
     #[test]
     fn test_traversal() {
         // 100.0 x 100.0 bounding box.
-        let bounding_box = Aabb3D::new(50.0, 50.0, 50.0);
+        let bounding_box = Aabb3D::from_xyz(50.0, 50.0, 50.0);
         let centre = DVec3::new(50.0, 50.0, 50.0);
 
         let mut qt = OctTree::new(constants::MAX_OCT_TREE_DEPTH);

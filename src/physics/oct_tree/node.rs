@@ -5,7 +5,6 @@ use std::collections::HashSet;
 use crate::{
     physics::oct_tree::{ChildOctant, OctIndex},
     physics::shapes::*,
-    //physics::prelude::*,
 };
 
 /// Each node has a unique index that locates it within the oct-tree arena, an outer boundary as a

@@ -1,26 +1,23 @@
-use bevy::math::{DQuat, DVec3};
+use bevy::math::{
+    DQuat,
+    DVec3
+};
 
-use crate::physics::prelude::*;
-
-//use crate::constants;
+use crate::{
+    physics::components::{
+        Force,
+        Torque,
+    },
+    physics::systems::forces,
+};
 
 #[derive(Debug)]
+/// A force and torque generator representing rotation about an axis.
 pub struct Rotator {
     axis: DVec3,
     positions: (DVec3, DVec3),
     forces: (DVec3, DVec3),
 }
-
-//impl Default for Rotator {
-//    fn default() -> Self {
-//        Self {
-//            axis: DVec3::X,
-//            position: DVec3::new(0.0, 0.0, 0.0),
-//            other_position: DVec3::new(0.0, 0.0, 0.0),
-//            force_magnitude: 0.0,
-//        }
-//    }
-//}
 
 impl Rotator {
     /// Creates a new Rotator from the force with given magnitude that acts at the given position
@@ -37,21 +34,12 @@ impl Rotator {
         }
     }
 
-//    pub fn force_and_body_point(&self) -> (DVec3, DVec3) {
-//        let force = self.force_magnitude * (self.axis.cross(self.position));
-//
-//        println!("{} * {} x {} = {}", self.force_magnitude, self.axis, self.position, force);
-//
-//        (force, self.position)
-//    }
-
+    /// Updates the force and torque accumulators based on the current rotator forces.
     pub fn update_force(
         &self,
         force_accum: &mut Force,
         torque_accum: &mut Torque
     ) {
-        use crate::physics::systems::forces;
-
         forces::add_force_at_body_point(
             self.forces.0,
             self.positions.0,

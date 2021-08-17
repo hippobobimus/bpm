@@ -2,7 +2,15 @@ use bevy::prelude::*;
 
 use crate::{
     constants,
-    physics::prelude::*,
+    physics::components::{
+        AngularVelocity,
+        Force,
+        InertiaTensor,
+        Mass,
+        PhysTransform,
+        Torque,
+        Velocity,
+    },
 };
 
 pub fn integrator(

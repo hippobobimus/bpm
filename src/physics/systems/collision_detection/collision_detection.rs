@@ -5,8 +5,10 @@ use bevy::{
 
 use crate::{
     constants,
-    physics::prelude::*,
     physics::collision_detection,
+    physics::components::{BoundaryCollider, Collider, Mass, PhysTransform},
+    physics::shapes::Aabb3D,
+    physics::oct_tree::{OctIndex, OctTree, OctTreeNode},
 };
 
 pub fn initialize(
@@ -19,7 +21,7 @@ pub fn initialize(
         constants::PLAY_AREA_CENTRE_Y,
         constants::PLAY_AREA_CENTRE_Y,
     );
-    let bounding_box = Aabb3D::new(
+    let bounding_box = Aabb3D::from_xyz(
         constants::PLAY_AREA_EXTENT_X,
         constants::PLAY_AREA_EXTENT_Y,
         constants::PLAY_AREA_EXTENT_Y,
@@ -107,14 +109,15 @@ pub fn broad_phase(
 }
 
 pub fn contact_generation(
-    query: Query<(&Collider, &PhysTransform)>,
+    primatives_query: Query<(&Collider, &PhysTransform)>,
+    boundaries_query: Query<(&BoundaryCollider, &PhysTransform)>,
     mut candidates: ResMut<CollisionCandidates>,
 ) {
     while let Some((ent_a, ent_b)) = candidates.pop() {
         if let (Ok((collider_a, transform_a)), Ok((collider_b, transform_b))) =
-            (query.get(ent_a), query.get(ent_b))
+            (primatives_query.get(ent_a), primatives_query.get(ent_b))
         {
-            let contacts = collision_detection::generate_contacts(
+            let contacts = collision_detection::generate_primative_contacts(
                 &collider_a.0,
                 &collider_b.0,
                 transform_a,
@@ -126,6 +129,8 @@ pub fn contact_generation(
             }
         }
     }
+
+    // TODO boundary contacts...
 }
 //    ///
 //    fn detect_all_boundary_collisions(qt: &QuadTree<Index>, boundaries: &Vec<Entity>, data: &mut CollisionDetectionSysData) {

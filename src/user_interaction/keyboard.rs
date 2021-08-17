@@ -10,8 +10,8 @@ use std::{
 };
 
 use crate::{
-    components::*,
-    physics::Thrust,
+    physics::components::Thrust,
+    user_interaction::components::{KeyboardControlled, Player},
 };
 
 // A mapping that associates keycodes to the cardinal movement directions.
@@ -49,11 +49,14 @@ fn movement(
             let (_kb, _player, mut thrust) = query.single_mut()
                 .expect("There should only be one player!");
 
+            println!("{:?} pressed", key_code);
             thrust.engage(dir);
-        } else if keys.just_released(*key_code) {
+        }
+        if keys.just_released(*key_code) {
             let (_kb, _player, mut thrust) = query.single_mut()
                 .expect("There should only be one player!");
 
+            println!("{:?} released", key_code);
             thrust.disengage(dir);
         }
     }

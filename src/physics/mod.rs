@@ -1,44 +1,30 @@
 pub mod components;
-pub mod entity;
+mod entity;
 mod oct_tree;
-mod shapes;
-pub mod systems;
+pub mod shapes;
+mod systems;
 
 // Re-exports
-pub use components::{
-    AngularVelocity,
-    Drag,
-    Force,
-    Gravity,
-    InertiaTensor,
-    Mass,
-    Rotator,
-    Thrust,
-    Torque,
-    Velocity,
-};
 pub use entity::PhysicsBundle;
 
+/// 'use physics::prelude::*;' to import common components, bundles and plugins.
 pub mod prelude {
     #[doc(hidden)]
     pub use super::components::{
         AngularVelocity,
+        BoundaryCollider,
         Collider,
         Drag,
-        Force,
         Gravity,
         InertiaTensor,
         Mass,
         PhysTransform,
         Rotator,
         Thrust,
-        Torque,
         Velocity,
     };
     pub use super::entity::PhysicsBundle;
-    pub use super::oct_tree::{OctIndex, OctTree, OctTreeNode};
     pub use super::shapes::{
-        Aabb3D,
         CollisionPrimative,
         Cuboid,
         Plane,
@@ -50,6 +36,8 @@ use bevy::prelude::*;
 
 use systems::{collision_detection, forces, integrator};
 
+/// A Bevy plugin that adds systems to support rigid-body physics, including; force handling,
+/// integration, collision detection and collision resolution (TBD).
 pub struct PhysicsPlugin;
 
 impl Plugin for PhysicsPlugin {

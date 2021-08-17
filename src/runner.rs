@@ -8,9 +8,9 @@ use bevy::{
 
 use crate::{
     constants,
-    spawner::SpawnerPlugin,
-    keyboard::KeyboardPlugin,
     physics::PhysicsPlugin,
+    spawner::SpawnerPlugin,
+    user_interaction::KeyboardPlugin,
 };
 
 pub fn run() -> Result<(), String> {
@@ -34,11 +34,14 @@ pub fn run() -> Result<(), String> {
             resizable: false,
             ..Default::default()
         })
+
         // events
 
         // startup systems
         .add_startup_system(setup.system())
+
         // systems
+
         // systems used during development
         .add_system(bevy::input::system::exit_on_esc_system.system())
         .add_system(bevy::window::exit_on_window_close_system.system())
@@ -49,6 +52,7 @@ pub fn run() -> Result<(), String> {
 
 // Systems
 
+// Spawns the boundaries of the play area, cameras and lights.
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,

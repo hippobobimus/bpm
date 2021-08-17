@@ -4,7 +4,7 @@ use crate::physics::shapes::*;
 
 /// An axis-aligned 3D bounding box. It stores the half-width extents of the bounding box in the x,
 /// y and z directions, but does not directly store the box's position within the coordinate system.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Aabb3D {
     extents: DVec3, // half-width extents in x, y and z axes.
 }
@@ -12,10 +12,15 @@ pub struct Aabb3D {
 impl Aabb3D {
     /// Creates a new axis-aligned bounding box with the given extents (half-widths) in the x, y
     /// and z directions.
-    pub fn new(extent_x: f64, extent_y: f64, extent_z: f64) -> Self {
-        Self {
-            extents: DVec3::new(extent_x, extent_y, extent_z),
-        }
+    pub fn from_xyz(extent_x: f64, extent_y: f64, extent_z: f64) -> Self {
+        let extents = DVec3::new(extent_x, extent_y, extent_z);
+        Self::from_dvec3(extents)
+    }
+
+    /// Creates a new axis-aligned bounding box from the given vector of extents (half-widths) in
+    /// the x, y and z directions.
+    pub fn from_dvec3(extents: DVec3) -> Self {
+        Self { extents }
     }
 
     /// Returns the extents (half widths) of the aabb as an x, y, z vector.
@@ -60,7 +65,7 @@ mod test {
 
     #[test]
     fn test_holds_sphere() {
-        let aabb = Aabb3D::new(2.0, 2.0, 2.0);
+        let aabb = Aabb3D::from_xyz(2.0, 2.0, 2.0);
         let sphere = Sphere::new(1.0);
 
         let aabb_pos = DVec3::ZERO;

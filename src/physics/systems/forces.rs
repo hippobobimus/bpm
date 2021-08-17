@@ -3,8 +3,15 @@ use bevy::{
     math::DVec3,
 };
 
-use crate::{
-    physics::prelude::*,
+use crate::physics::components::{
+        Drag,
+        Force,
+        Gravity,
+        Mass,
+        Rotator,
+        Thrust,
+        Torque,
+        Velocity,
 };
 
 /// A system that calculates and accumulates various forces and associated torques applied on a
