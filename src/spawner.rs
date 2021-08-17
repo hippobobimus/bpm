@@ -41,7 +41,7 @@ fn spawn_player(
     })
     .insert(KeyboardControlled)
     .insert(Player)
-    .insert_bundle(PhysicsBundle::sphere(
+    .insert_bundle(PhysicsColliderBundle::sphere(
             mass,
             radius_f64,
             PhysTransform::from_xyz(0.0, radius_f64, 0.0),
@@ -72,7 +72,7 @@ fn spawn_spheres(
             transform: Transform::from_xyz(x as f32, y as f32, z as f32),
             ..Default::default()
         })
-        .insert_bundle(PhysicsBundle::sphere(
+        .insert_bundle(PhysicsColliderBundle::sphere(
             mass,
             radius,
             PhysTransform::from_xyz(x, y, z),
@@ -105,7 +105,7 @@ fn spawn_cuboids(
             transform: Transform::from_xyz(x as f32, y as f32, z as f32),
             ..Default::default()
         })
-        .insert_bundle(PhysicsBundle::cuboid(
+        .insert_bundle(PhysicsColliderBundle::cuboid(
                 mass,
                 extents,
                 PhysTransform::from_xyz(x, y, z),
@@ -119,120 +119,27 @@ fn spawn_fan(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let mass = 20.0;
+    let extents = DVec3::new(1.0, 10.0, 1.0);
 
     commands.spawn_bundle(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Box::new(1.0, 10.0, 0.1))),
+        mesh: meshes.add(Mesh::from(shape::Box::new(
+            extents.x as f32 * 2.0,
+            extents.y as f32 * 2.0,
+            extents.z as f32 * 2.0,
+        ))),
         material: materials.add(Color::rgb(0.0, 0.0, 1.0).into()),
         transform: Transform::from_xyz(0.0, 10.0, -10.0),
         ..Default::default()
     })
-    .insert_bundle(PhysicsBundle {
-        inertia_tensor: InertiaTensor::cuboid(mass, 1.0, 10.0, 0.1),
-        mass: Mass::new(mass),
-        transform: PhysTransform::from_xyz(0.0, 10.0, -10.0),
-        ..Default::default()
-    })
+    .insert_bundle(PhysicsColliderBundle::cuboid(
+            mass,
+            extents,
+            PhysTransform::from_xyz(0.0, 10.0, -10.0),
+    ))
     .insert(Rotator::new(DVec3::Z, DVec3::new(0.0, 5.0, 0.0), 10.0));
 }
 
 // TODO port old code
-//pub fn setup_initial_entities(world: &mut World) {
-//    let circle_qty = 0;
-//    let polygon_qty = 0;
-//
-//    let mut spawner = Spawner::new(world);
-//
-//    // spawn player.
-//    spawner.spawn_player(0.0, 0.0, 10.0, 10.0);
-//
-//    // spawn world boundaries.
-//    spawner.spawn_boundaries();
-//
-//    // spawn random circles.
-//    let mut rng = thread_rng();
-//    for _ in 0..circle_qty {
-//        let radius = rng.gen_range(1.0..20.0);
-//        let x = rng.gen_range(constants::FMIN_X + radius..constants::FMAX_X - radius);
-//        let y = rng.gen_range(constants::FMIN_Y + radius..constants::FMAX_Y - radius);
-//        let mass = radius * radius * radius * 0.01;
-//        spawner.spawn_circle(x, y, radius, mass);
-//    }
-//
-//    // spawn polygons
-//    // TODO currently just a generic polygon.
-//    let vertices = vec![
-//        vector![-20.0, 10.0],
-//        vector![0.0, 20.0],
-//        vector![20.0, 0.0],
-//        vector![10.0, -20.0],
-//        vector![-10.0, -10.0]
-//    ];
-//
-//    for _ in 0..polygon_qty {
-//        spawner.spawn_polygon(50.0, 50.0, 100.0, vertices.clone());
-//    }
-//}
-//
-//struct Spawner<'a> {
-//    world: &'a mut World,
-//}
-//
-//impl<'a> Spawner<'a> {
-//    pub fn new(world: &'a mut World) -> Self {
-//        Self { world }
-//    }
-//
-//    fn spawn_circle(&mut self, x_pos: f64, y_pos: f64, radius: f64, mass: f64) {
-//        let mut rng = thread_rng();
-//        self.world.create_entity()
-//                  .with(Position { vector: vector![x_pos, y_pos] })
-//                  // physics
-//                  .with(Forces::default())
-//                  .with(Mass { value: mass, inverse: 1.0 / mass })
-//                  .with(Velocity {
-//                      vector: vector![rng.gen_range(-10.0..10.0), rng.gen_range(-10.0..10.0)] })
-//                  .with(CircleCollider::new(radius))
-//                  // rendering
-//                  .with(RenderableCircle::new(radius))
-//                  .with(RenderColour::new(255, 210, 0))
-//                  .build();
-//    }
-//
-//    fn spawn_polygon(&mut self, x_pos: f64, y_pos: f64, mass: f64, vertices: Vec<Vector2<f64>>) {
-//        let mut rng = thread_rng();
-//        self.world.create_entity()
-//                  .with(Position { vector: vector![x_pos, y_pos] })
-//                  // physics
-//                  .with(Forces::default())
-//                  .with(Mass { value: mass, inverse: 1.0 / mass })
-//                  .with(Velocity { vector: vector![rng.gen_range(-10.0..10.0), rng.gen_range(-10.0..10.0)] })
-//                  .with(PolygonCollider::new(&vertices))
-//                  // rendering
-//                  .with(RenderablePolygon::new(&vertices))
-//                  .with(RenderColour::new(255, 120, 0))
-//                  .build();
-//    }
-//
-//
-//    fn spawn_player(&mut self, x_pos: f64, y_pos: f64, radius: f64, mass: f64) {
-//        self.world.create_entity()
-//                  .with(Player)
-//                  .with(KeyboardControlled)
-//                  .with(Position::new(vector![x_pos, y_pos]))
-//                  // physics
-//                  .with(Force::default())
-//                  .with(Drag::default())
-//                  .with(Gravity::default())
-//                  .with(Thrust::default())
-//                  //.with(Forces::default())
-//                  .with(Mass::new(mass))
-//                  .with(Velocity::default())
-//                  //.with(CircleCollider::new(radius))
-//                  // rendering
-//                  .with(RenderableCircle::new(radius))
-//                  .with(RenderColour::new(0, 255, 0))
-//                  .build();
-//    }
 //
 //    fn spawn_boundaries(&mut self) {
 //        let planes = vec![

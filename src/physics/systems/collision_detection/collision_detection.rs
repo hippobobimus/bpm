@@ -5,17 +5,52 @@ use bevy::{
 
 use crate::{
     constants,
-    physics::collision_detection,
-    physics::components::{BoundaryCollider, Collider, Mass, PhysTransform},
+    physics::collision_detection::{
+        self,
+        Contact,
+    },
+    physics::components::{
+        BoundaryCollider,
+        Collider,
+        Mass,
+        PhysTransform,
+    },
     physics::shapes::Aabb3D,
-    physics::oct_tree::{OctIndex, OctTree, OctTreeNode},
+    physics::oct_tree::{
+        OctIndex,
+        OctTree,
+        OctTreeNode,
+    },
 };
 
+/// A vector list containing possible collisions represented by the pair of Entitys concerned.
+type CollisionCandidates = Vec<(Entity, Entity)>;
+
+/// A SystemSet covering collision detection and contact generation processes.
+pub fn get_system_set() -> SystemSet {
+    SystemSet::new()
+        .with_system(update_tree.system()
+                     .label("tree update")
+        )
+        .with_system(broad_phase.system()
+                     .label("broad phase")
+                     .after("tree update")
+        )
+        .with_system(contact_generation.system()
+                     .after("broad phase")
+        )
+}
+
+/// A system to be run at startup that performs necessary setup for collision detection to run.
+///
+/// Creates resources required for collision detection and contact generation. Namely, an OctTree
+/// used for spatial partitioning, filling it with currently available primative shapes, and the
+/// CollisionCandidates vector.
 pub fn initialize(
     mut commands: Commands,
     shapes_query: Query<(Entity, &Collider, &PhysTransform), With<Mass>>,
 ) {
-    // create oct-tree that covers the gameplay volume.
+    // create OctTree that covers the gameplay volume.
     let centre = DVec3::new(
         constants::PLAY_AREA_CENTRE_X,
         constants::PLAY_AREA_CENTRE_Y,
@@ -37,11 +72,14 @@ pub fn initialize(
 
     commands.insert_resource(tree);
 
+    // Create collision candidates resource.
     let collision_candidates: CollisionCandidates = vec![];
     commands.insert_resource(collision_candidates);
 }
 
-pub fn update_tree(
+/// Updates the OctTree by inserting any new entities with a Collider into the tree and updating
+/// the position of any entities that have moved since the last frame.
+fn update_tree(
     added_query: Query<(Entity, &Collider, &PhysTransform), (With<Mass>, Added<PhysTransform>)>,
     moved_query: Query<(Entity, &Collider, &PhysTransform), (With<Mass>, Changed<PhysTransform>)>,
     mut tree: ResMut<OctTree<Entity>>,
@@ -57,9 +95,9 @@ pub fn update_tree(
     }
 }
 
-pub type CollisionCandidates = Vec<(Entity, Entity)>;
 
-/// Broad phase collision detection that generates collision candidates.
+/// Broad phase collision detection that generates collision candidates by finding appropriate in
+/// close proximity using the OctTree's spatial partitioning.
 pub fn broad_phase(
     tree: Res<OctTree<Entity>>,
     mut candidates: ResMut<CollisionCandidates>,
@@ -108,14 +146,17 @@ pub fn broad_phase(
     helper(&*tree, root_node, &mut stack, &mut candidates);
 }
 
-pub fn contact_generation(
-    primatives_query: Query<(&Collider, &PhysTransform)>,
-    boundaries_query: Query<(&BoundaryCollider, &PhysTransform)>,
+/// Narrow-phase collision detection and contact generation.
+fn contact_generation(
+    collider_query: Query<(&Collider, &PhysTransform)>,
+    boundary_query: Query<(&BoundaryCollider, &PhysTransform)>,
     mut candidates: ResMut<CollisionCandidates>,
 ) {
+    // work through the collision candidates list of primatives produced by the OctTree and generate
+    // contacts.
     while let Some((ent_a, ent_b)) = candidates.pop() {
         if let (Ok((collider_a, transform_a)), Ok((collider_b, transform_b))) =
-            (primatives_query.get(ent_a), primatives_query.get(ent_b))
+            (collider_query.get(ent_a), collider_query.get(ent_b))
         {
             let contacts = collision_detection::generate_primative_contacts(
                 &collider_a.0,
@@ -125,41 +166,29 @@ pub fn contact_generation(
             );
 
             if let Some(c) = contacts {
-                println!("{:?}", c);
+                process_contacts(c);
             }
         }
     }
 
-    // TODO boundary contacts...
+    // test all internal colliders for contact with the boundaries.
+    for (bnd, bnd_transform) in boundary_query.iter() {
+        for (coll, coll_transform) in collider_query.iter() {
+            let contacts = collision_detection::generate_boundary_contacts(
+                &bnd.0,
+                &coll.0,
+                bnd_transform,
+                coll_transform,
+            );
+
+            if let Some(c) = contacts {
+                process_contacts(c);
+            }
+        }
+    }
 }
-//    ///
-//    fn detect_all_boundary_collisions(qt: &QuadTree<Index>, boundaries: &Vec<Entity>, data: &mut CollisionDetectionSysData) {
-//
-//        for bnd_ent in boundaries {
-//            let plane = data.boundary_collider.get(*bnd_ent).unwrap().plane;
-//            let normal = plane.normal();
-//            let plane_pos = data.position.get(*bnd_ent).unwrap().vector;
-//
-//            for ent_idx in qt.query_by_plane(&plane, &plane_pos) {
-//                let ent = data.entities.entity(ent_idx); // TODO Check is_alive()
-//                let candidate_pos = data.position.get(ent).unwrap().vector;
-//
-//                if let Some(c) = data.circle_collider.get(ent) {
-//                    if let Some(_) = shapes::circle_plane_are_intersecting(c.circle(), &candidate_pos, &plane, &plane_pos) {
-//                        Self::add_collision(*bnd_ent, ent, *normal, data);
-//                    }
-//                }
-//            }
-//        }
-//    }
-//
-//    /// Creates a new collision entity within the ECS, It details the two colliding entities and
-//    /// the collision normal vector from entity a to entity b.
-//    fn add_collision(ent_a: Entity, ent_b: Entity, normal: Vector2<f64>, data: &mut CollisionDetectionSysData) {
-//        let entity = data.entities.create();
-//        // unwrap cannot fail because entity has just been created.
-//        data.collision.insert(entity, Collision { ent_a, ent_b, normal }).unwrap();
-//    }
-//
-//}
-//
+
+// TODO
+fn process_contacts(contacts: Vec<Contact>) {
+    println!("{:?}", contacts);
+}

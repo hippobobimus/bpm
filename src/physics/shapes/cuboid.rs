@@ -2,6 +2,7 @@ use bevy::math::DVec3;
 
 use crate::{
     physics::shapes::{
+        Collidable,
         CollisionPrimative, 
         Sphere,
     },
@@ -30,7 +31,7 @@ impl Cuboid {
         self.extents
     }
 
-    /// Returns a list of the cuboids 8 vertices in local body coords (origin at the body centre).
+    /// Returns a list of the cuboid's 8 vertices in local body coords (origin at the body centre).
     pub fn vertices(&self, transform: &PhysTransform) -> [DVec3; 8] {
         let mut vertices = [
             DVec3::new(self.extents.x, self.extents.y, self.extents.z),
@@ -59,25 +60,26 @@ impl Cuboid {
 }
 
 impl CollisionPrimative for Cuboid {
+    /// Returns the Sphere that shares a centre point with the Cuboid and completely encloses it.
     fn bounding_sphere(&self) -> &Sphere {
         &self.bounding_sphere
     }
 }
 
-impl Cuboid {
-    /// Calculates and returns the closest point on the aabb centred at the given position to the
+impl Collidable for Cuboid {
+    /// Calculates and returns the closest point on the Cuboid centred at the given position to the
     /// given target point. The calculation is made by clamping the target to the min and max
-    /// vertices of the aabb.
-    pub fn closest_point_to(&self, centre: DVec3, target: DVec3) -> DVec3 {
+    /// vertices of the Cuboid.
+    fn closest_point_to(&self, centre: DVec3, target: DVec3) -> DVec3 {
         let min = -self.extents + centre;
         let max = self.extents + centre;
 
         target.clamp(min, max)
     }
 
-    /// Calculates and returns the shortest distance between the aabb, centred at the given
+    /// Calculates and returns the shortest distance between the Cuboid, centred at the given
     /// position, and the target point.
-    pub fn shortest_dist_to(&self, centre: DVec3, target: DVec3) -> f64 {
+    fn shortest_distance_to(&self, centre: DVec3, target: DVec3) -> f64 {
         (target - self.closest_point_to(centre, target)).length()
     }
 }

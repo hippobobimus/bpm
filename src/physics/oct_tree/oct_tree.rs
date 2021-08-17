@@ -6,10 +6,19 @@ use std::{
 };
 
 use crate::{
-    physics::components::{Collider, PhysTransform},
-    physics::collision_detection::contact_generation::contact_generators,
-    physics::oct_tree::{ChildOctant, OctIndex, node::OctTreeNode},
-    physics::shapes::{Aabb3D, Plane, Sphere},
+    physics::components::{
+        Collider,
+        PhysTransform,
+    },
+    physics::oct_tree::{
+        ChildOctant,
+        OctIndex,
+        OctTreeNode,
+    },
+    physics::shapes::{
+        Aabb3D,
+        Sphere,
+    },
 };
 
 /// An arena based, statically sized oct-tree implementation that stores nodes in a vector. It is
@@ -197,41 +206,41 @@ impl<T: Copy + Hash + Eq> OctTree<T> {
 
     // QUERIES
 
-    /// Returns all data entries in the oct-tree that reside in nodes intersected by the given
-    /// plane.
-    pub fn query_by_plane(&self, plane: &Plane, plane_pos: DVec3) -> Vec<T> {
-        // Determines whether the plane intersects the current node and then recursively checks any
-        // connected child nodes, collecting any data entries found in intersected nodes along
-        // the way.
-        fn helper<T: Copy + Hash + Eq>(
-            qt: &OctTree<T>,
-            node_idx: OctIndex,
-            plane: &Plane,
-            plane_pos: DVec3,
-            result: &mut Vec<T>
-        ) {
-            let node = qt.get_node(node_idx).unwrap();
-            let aabb = node.boundary;
-            let aabb_pos = node.centre;
-
-            if contact_generators::aabb_and_plane_in_contact(&aabb, aabb_pos, plane, plane_pos) {
-                // collect data entries.
-                for d in node.data.iter() {
-                    result.push(*d);
-                }
-                // recurse to child nodes.
-                for child_idx in node.children.iter().flatten() {
-                    helper(qt, *child_idx, plane, plane_pos, result);
-                }
-            }
-        }
-
-        let mut result = vec![];
-
-        helper(&self, self.root, plane, plane_pos, &mut result);
-
-        result
-    }
+//    /// Returns all data entries in the oct-tree that reside in nodes intersected by the given
+//    /// plane.
+//    pub fn query_by_plane(&self, plane: &Plane, plane_pos: DVec3) -> Vec<T> {
+//        // Determines whether the plane intersects the current node and then recursively checks any
+//        // connected child nodes, collecting any data entries found in intersected nodes along
+//        // the way.
+//        fn helper<T: Copy + Hash + Eq>(
+//            qt: &OctTree<T>,
+//            node_idx: OctIndex,
+//            plane: &Plane,
+//            plane_pos: DVec3,
+//            result: &mut Vec<T>
+//        ) {
+//            let node = qt.get_node(node_idx).unwrap();
+//            let aabb = node.boundary;
+//            let aabb_pos = node.centre;
+//
+//            if contact_generators::aabb_and_plane_in_contact(&aabb, aabb_pos, plane, plane_pos) {
+//                // collect data entries.
+//                for d in node.data.iter() {
+//                    result.push(*d);
+//                }
+//                // recurse to child nodes.
+//                for child_idx in node.children.iter().flatten() {
+//                    helper(qt, *child_idx, plane, plane_pos, result);
+//                }
+//            }
+//        }
+//
+//        let mut result = vec![];
+//
+//        helper(&self, self.root, plane, plane_pos, &mut result);
+//
+//        result
+//    }
 
     // ITERATORS
 

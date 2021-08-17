@@ -4,11 +4,12 @@ use bevy::{
         //FrameTimeDiagnosticsPlugin,
         LogDiagnosticsPlugin,
     },
+    math::DVec3,
 };
 
 use crate::{
     constants,
-    physics::PhysicsPlugin,
+    physics::prelude::*,
     spawner::SpawnerPlugin,
     user_interaction::KeyboardPlugin,
 };
@@ -59,11 +60,17 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // Planes
+    // -- Floor
     commands.spawn_bundle(PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Plane { size: 200.0 })),
         material: materials.add(Color::rgb(0.0, 1.0, 0.0).into()),
         ..Default::default()
-    });
+    })
+    .insert_bundle(PhysicsBoundaryBundle::new(
+            DVec3::Y,
+            PhysTransform::from_xyz(0.0, 0.0, 0.0),
+    ));
+    // -- Back wall
     commands.spawn_bundle(PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Plane { size: 200.0 })),
         material: materials.add(Color::rgb(0.0, 1.0, 0.0).into()),

@@ -67,11 +67,3 @@ pub fn integrator(
         // TODO reset forces here?
     }
 }
-
-//        // Update position.
-//        // TODO deal with f32 f64 precision conflict in position
-//        let translation = *v.vector() * dt_secs;
-//        bevy_transform.translation += Vec3::new(translation.x as f32,
-//                                                translation.y as f32,
-//                                                translation.z as f32);
-//

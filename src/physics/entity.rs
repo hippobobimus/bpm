@@ -7,6 +7,7 @@ use crate::{
     constants,
     physics::components::{
         AngularVelocity,
+        BoundaryCollider,
         Collider,
         Drag,
         Force,
@@ -20,13 +21,14 @@ use crate::{
     },
     physics::shapes::{
         Cuboid,
+        Plane,
         Sphere,
     },
 };
 
-/// A component bundle that adds rigid-body physics to an entity.
+/// A component bundle that adds rigid-body physics to an entity. Supports cuboids and spheres.
 #[derive(Bundle)]
-pub struct PhysicsBundle {
+pub struct PhysicsColliderBundle {
     pub angular_velocity: AngularVelocity,
     pub collider: Collider,
     pub drag: Drag,
@@ -40,8 +42,8 @@ pub struct PhysicsBundle {
     pub velocity: Velocity,
 }
 
-impl PhysicsBundle {
-    /// Creates a new PhysicsBundle for a cuboid body with the given mass, transform and extents.
+impl PhysicsColliderBundle {
+    /// Creates a new PhysicsColliderBundle for a cuboid body with the given mass, transform and extents.
     pub fn cuboid(mass: f64, extents: DVec3, transform: PhysTransform) -> Self {
         Self {
             collider: Collider::new(Cuboid::new(extents)),
@@ -52,7 +54,7 @@ impl PhysicsBundle {
         }
     }
 
-    /// Creates a new PhysicsBundle for a spherical body with the given mass, transform and extents.
+    /// Creates a new PhysicsColliderBundle for a spherical body with the given mass, transform and extents.
     pub fn sphere(mass: f64, radius: f64, transform: PhysTransform) -> Self {
         Self {
             collider: Collider::new(Sphere::new(radius)),
@@ -64,7 +66,7 @@ impl PhysicsBundle {
     }
 }
 
-impl Default for PhysicsBundle {
+impl Default for PhysicsColliderBundle {
     fn default() -> Self {
         Self {
             angular_velocity: Default::default(),
@@ -78,6 +80,36 @@ impl Default for PhysicsBundle {
             torque: Default::default(),
             transform: Default::default(),
             velocity: Default::default(),
+        }
+    }
+}
+
+/// A component bundle that adds rigid-body physics to an entity. Supports boundary planes as
+/// half-spaces.
+#[derive(Bundle)]
+pub struct PhysicsBoundaryBundle {
+    pub boundary_collider: BoundaryCollider,
+    pub mass: Mass,
+    pub transform: PhysTransform,
+}
+
+impl PhysicsBoundaryBundle {
+    /// Creates a new PhysicsBoundaryBundle for a half-space with the given normal vector and transform.
+    pub fn new(normal: DVec3, transform: PhysTransform) -> Self {
+        Self {
+            boundary_collider: BoundaryCollider::new(Plane::new(normal)),
+            mass: Mass::from_inverse(0.0), // infinite mass, i.e. cannot move.
+            transform,
+        }
+    }
+}
+
+impl Default for PhysicsBoundaryBundle {
+    fn default() -> Self {
+        Self {
+            boundary_collider: BoundaryCollider::new(Plane::new(DVec3::Y)),
+            mass: Mass::from_inverse(0.0), // infinite mass, i.e. cannot move.
+            transform: Default::default(),
         }
     }
 }

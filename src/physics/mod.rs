@@ -5,7 +5,7 @@ pub mod shapes;
 mod systems;
 
 // Re-exports
-pub use entity::PhysicsBundle;
+pub use entity::PhysicsColliderBundle;
 
 /// 'use physics::prelude::*;' to import common components, bundles and plugins.
 pub mod prelude {
@@ -23,13 +23,17 @@ pub mod prelude {
         Thrust,
         Velocity,
     };
-    pub use super::entity::PhysicsBundle;
+    pub use super::entity::{
+        PhysicsBoundaryBundle,
+        PhysicsColliderBundle,
+    };
     pub use super::shapes::{
         CollisionPrimative,
         Cuboid,
         Plane,
         Sphere,
     };
+    pub use super::PhysicsPlugin;
 }
 
 use bevy::prelude::*;
@@ -61,19 +65,9 @@ impl Plugin for PhysicsPlugin {
                     .after("forces")
             )
             .add_system_set(
-                SystemSet::new()
+                collision_detection::get_system_set()
                     .label("collision detection")
                     .after("integrator")
-                    .with_system(collision_detection::update_tree.system()
-                                 .label("tree update")
-                    )
-                    .with_system(collision_detection::broad_phase.system()
-                                 .label("broad phase")
-                                 .after("tree update")
-                    )
-                    .with_system(collision_detection::contact_generation.system()
-                                 .after("broad phase")
-                    )
             );
     }
 }
