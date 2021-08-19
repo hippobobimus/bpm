@@ -6,9 +6,10 @@ use bevy::math::{
 use crate::{
     physics::components::{
         Force,
+        PhysTransform,
         Torque,
     },
-    physics::systems::forces,
+    physics::systems::force_and_torque,
 };
 
 #[derive(Debug)]
@@ -21,8 +22,9 @@ pub struct Rotator {
 
 impl Rotator {
     /// Creates a new Rotator from the force with given magnitude that acts at the given position
-    /// to create a rotation around the given axis.
+    /// to create a rotation around the given axis. The position and axis are in body coords.
     pub fn new(axis: DVec3, position: DVec3, force_magnitude: f64) -> Self {
+        // 180 deg. rotation about the given axis.
         let rotation = DQuat::from_axis_angle(axis, std::f64::consts::PI);
 
         let force = force_magnitude * (axis.cross(position).normalize());
@@ -35,20 +37,23 @@ impl Rotator {
     }
 
     /// Updates the force and torque accumulators based on the current rotator forces.
-    pub fn update_force(
+    pub fn update_force_and_torque(
         &self,
         force_accum: &mut Force,
-        torque_accum: &mut Torque
+        torque_accum: &mut Torque,
+        transform: &PhysTransform,
     ) {
-        forces::add_force_at_body_point(
+        force_and_torque::add_body_force_at_body_point(
             self.forces.0,
             self.positions.0,
+            transform,
             force_accum,
             torque_accum,
         );
-        forces::add_force_at_body_point(
+        force_and_torque::add_body_force_at_body_point(
             self.forces.1,
             self.positions.1,
+            transform,
             force_accum,
             torque_accum,
         );

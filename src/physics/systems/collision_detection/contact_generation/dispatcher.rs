@@ -1,5 +1,8 @@
+use bevy::prelude::Entity;
+
 use crate::{
     physics::components::{
+        Contact,
         PhysTransform,
     },
     physics::shapes::{
@@ -8,7 +11,6 @@ use crate::{
         Plane,
         Sphere,
     },
-    physics::systems::collision_detection::contact_generation::contact::Contact,
     physics::systems::collision_detection::contact_generation::contact_generators,
 };
 
@@ -16,6 +18,8 @@ use crate::{
 /// concrete shape type known at runtime and dispatching to the appropriate contact generation
 /// function.
 pub fn generate_primative_contacts(
+    ent_a: Entity,
+    ent_b: Entity,
     a: &Box<dyn CollisionPrimative>,
     b: &Box<dyn CollisionPrimative>,
     transform_a: &PhysTransform,
@@ -29,6 +33,8 @@ pub fn generate_primative_contacts(
 
     if a_is_sphere && b_is_sphere {
         return contact_generators::sphere_and_sphere(
+            ent_a,
+            ent_b,
             a.downcast_ref::<Sphere>().unwrap(),
             b.downcast_ref::<Sphere>().unwrap(),
             transform_a,
@@ -37,6 +43,8 @@ pub fn generate_primative_contacts(
     }
     if a_is_cuboid && b_is_cuboid {
         return contact_generators::cuboid_and_cuboid(
+            ent_a,
+            ent_b,
             a.downcast_ref::<Cuboid>().unwrap(),
             b.downcast_ref::<Cuboid>().unwrap(),
             transform_a,
@@ -45,6 +53,8 @@ pub fn generate_primative_contacts(
     }
     if a_is_cuboid && b_is_sphere {
         return contact_generators::cuboid_and_sphere(
+            ent_a,
+            ent_b,
             a.downcast_ref::<Cuboid>().unwrap(),
             b.downcast_ref::<Sphere>().unwrap(),
             transform_a,
@@ -53,6 +63,8 @@ pub fn generate_primative_contacts(
     }
     if a_is_sphere && b_is_cuboid {
         return contact_generators::cuboid_and_sphere(
+            ent_b,
+            ent_a,
             b.downcast_ref::<Cuboid>().unwrap(),
             a.downcast_ref::<Sphere>().unwrap(),
             transform_b,
@@ -66,6 +78,7 @@ pub fn generate_primative_contacts(
 /// Generates contacts between a half-space boundary represented by a Plane and a
 /// CollisionPrimative.
 pub fn generate_boundary_contacts(
+    ent_other: Entity,
     bnd: &Plane,
     other: &Box<dyn CollisionPrimative>,
     transform_bnd: &PhysTransform,
@@ -77,6 +90,7 @@ pub fn generate_boundary_contacts(
 
     if other_is_sphere {
         return contact_generators::sphere_and_half_space(
+            ent_other,
             other.downcast_ref::<Sphere>().unwrap(),
             bnd,
             transform_other,
@@ -85,6 +99,7 @@ pub fn generate_boundary_contacts(
     }
     if other_is_cuboid {
         return contact_generators::cuboid_and_half_space(
+            ent_other,
             other.downcast_ref::<Cuboid>().unwrap(),
             bnd,
             transform_other,

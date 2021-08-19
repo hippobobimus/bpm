@@ -23,8 +23,8 @@ impl Velocity {
     }
 
     /// Returns the vector representation of the velocity.
-    pub fn vector(&self) -> &DVec3 {
-        &self.vector
+    pub fn vector(&self) -> DVec3 {
+        self.vector
     }
 
     /// Sets the velocity to zero.

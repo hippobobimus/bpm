@@ -45,27 +45,27 @@ impl InertiaTensor {
     // Ellipsoid, shell-sphere, cylinder, cone, hemisphere...
 
     /// Returns the inertia tensor with respect to local body coords.
-    pub fn tensor(&self) -> &DMat3 {
-        &self.tensor
+    pub fn tensor(&self) -> DMat3 {
+        self.tensor
     }
 
     /// Returns the inverse inertia tensor with respect to local body coords.
-    pub fn inverse(&self) -> &DMat3 {
-        &self.inverse
+    pub fn inverse(&self) -> DMat3 {
+        self.inverse
     }
 
     /// Returns the inverse inertia tensor with respect to local body coords.
     /// The 'update' function MUST be called before retrieval if the body has changed position or
     /// orientation, otherwise the value of the inverse inertia tensor in global coords will be out
     /// of date.
-    pub fn inverse_global(&self) -> &DMat3 {
-        &self.inverse_global
+    pub fn inverse_global(&self) -> DMat3 {
+        self.inverse_global
     }
 
     /// Updates cached values. Must be run when the associated entity is translated or rotated
     /// within global coordinate space to ensure an accurate value for the inverse inertia tensor
     /// in global coords.
-    pub fn update(&mut self, transform_matrix: &DMat4) {
+    pub fn update(&mut self, transform_matrix: DMat4) {
         // Transform the local tensor into the global basis using the given transform matrix.
 
         // TODO will be able to simplify to the below when bevy uses a more recent version of the

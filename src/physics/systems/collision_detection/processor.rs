@@ -5,13 +5,11 @@ use bevy::{
 
 use crate::{
     constants,
-    physics::collision_detection::{
-        self,
-        Contact,
-    },
+    physics::collision_detection,
     physics::components::{
         BoundaryCollider,
         Collider,
+        Contact,
         Mass,
         PhysTransform,
     },
@@ -21,6 +19,7 @@ use crate::{
         OctTree,
         OctTreeNode,
     },
+    user_interaction::Player,
 };
 
 /// A vector list containing possible collisions represented by the pair of Entitys concerned.
@@ -95,10 +94,9 @@ fn update_tree(
     }
 }
 
-
 /// Broad phase collision detection that generates collision candidates by finding appropriate in
 /// close proximity using the OctTree's spatial partitioning.
-pub fn broad_phase(
+fn broad_phase(
     tree: Res<OctTree<Entity>>,
     mut candidates: ResMut<CollisionCandidates>,
 ) {
@@ -148,17 +146,20 @@ pub fn broad_phase(
 
 /// Narrow-phase collision detection and contact generation.
 fn contact_generation(
-    collider_query: Query<(&Collider, &PhysTransform)>,
+    collider_query: Query<(Entity, &Collider, &PhysTransform)>,
     boundary_query: Query<(&BoundaryCollider, &PhysTransform)>,
+    player_query: Query<Entity, With<Player>>,
     mut candidates: ResMut<CollisionCandidates>,
 ) {
     // work through the collision candidates list of primatives produced by the OctTree and generate
     // contacts.
     while let Some((ent_a, ent_b)) = candidates.pop() {
-        if let (Ok((collider_a, transform_a)), Ok((collider_b, transform_b))) =
+        if let (Ok((ent_a, collider_a, transform_a)), Ok((ent_b, collider_b, transform_b))) =
             (collider_query.get(ent_a), collider_query.get(ent_b))
         {
             let contacts = collision_detection::generate_primative_contacts(
+                ent_a,
+                ent_b,
                 &collider_a.0,
                 &collider_b.0,
                 transform_a,
@@ -166,15 +167,16 @@ fn contact_generation(
             );
 
             if let Some(c) = contacts {
-                process_contacts(c);
+                process_contacts(c, &player_query);
             }
         }
     }
 
     // test all internal colliders for contact with the boundaries.
     for (bnd, bnd_transform) in boundary_query.iter() {
-        for (coll, coll_transform) in collider_query.iter() {
+        for (coll_ent, coll, coll_transform) in collider_query.iter() {
             let contacts = collision_detection::generate_boundary_contacts(
+                coll_ent,
                 &bnd.0,
                 &coll.0,
                 bnd_transform,
@@ -182,13 +184,21 @@ fn contact_generation(
             );
 
             if let Some(c) = contacts {
-                process_contacts(c);
+                process_contacts(c, &player_query);
             }
         }
     }
 }
 
-// TODO
-fn process_contacts(contacts: Vec<Contact>) {
-    println!("{:?}", contacts);
+// TODO currently just prints contacts that occur with the Player Entity.
+fn process_contacts(
+    contacts: Vec<Contact>,
+    player_query: &Query<Entity, With<Player>>,
+) {
+    let player_ent = player_query.single().unwrap();
+    for contact in contacts.iter() {
+        if contact.entities.0 == Some(player_ent) || contact.entities.1 == Some(player_ent) {
+            println!("{:?}", contact);
+        }
+    }
 }

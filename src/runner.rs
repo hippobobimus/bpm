@@ -11,7 +11,7 @@ use crate::{
     constants,
     physics::prelude::*,
     spawner::SpawnerPlugin,
-    user_interaction::KeyboardPlugin,
+    user_interaction::UserInteractionPlugin,
 };
 
 pub fn run() -> Result<(), String> {
@@ -22,7 +22,7 @@ pub fn run() -> Result<(), String> {
         .add_plugin(LogDiagnosticsPlugin::default())
         //.add_plugin(FrameTimeDiagnosticsPlugin::default())
         // --Custom
-        .add_plugin(KeyboardPlugin)
+        .add_plugin(UserInteractionPlugin)
         .add_plugin(PhysicsPlugin)
         .add_plugin(SpawnerPlugin)
 

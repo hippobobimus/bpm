@@ -6,6 +6,7 @@ use std::{
 use crate::direction::Direction;
 
 #[derive(Debug)]
+/// Represents either a request to move in a given direction, or to stop.
 pub enum MovementCommand {
     Move(DVec3),
     Stop,
@@ -19,6 +20,7 @@ pub struct MovementCommandStack {
 }
 
 impl MovementCommandStack {
+    /// Creates a new empty MovementCommandStack.
     pub fn new() -> Self {
         Self {
             queue: VecDeque::new(),
@@ -40,6 +42,8 @@ impl MovementCommandStack {
         }
     }
 
+    /// Returns the first Direction in the stack that is still considered active as Some(Direction),
+    /// or None if there are no active Directions.
     fn get_next_active_direction(&mut self) -> Option<Direction> {
         while let Some(dir) = self.queue.front() {
             if self.active.contains(dir) {

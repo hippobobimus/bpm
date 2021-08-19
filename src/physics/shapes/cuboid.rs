@@ -31,7 +31,7 @@ impl Cuboid {
         self.extents
     }
 
-    /// Returns a list of the cuboid's 8 vertices in local body coords (origin at the body centre).
+    /// Returns a list of the cuboid's 8 vertices in global coords.
     pub fn vertices(&self, transform: &PhysTransform) -> [DVec3; 8] {
         let mut vertices = [
             DVec3::new(self.extents.x, self.extents.y, self.extents.z),
@@ -44,8 +44,9 @@ impl Cuboid {
             DVec3::new(-self.extents.x, -self.extents.y, -self.extents.z)
         ];
 
+        // Convert to global coords.
         for v in &mut vertices {
-            *v = transform.matrix().transform_point3(*v);
+            *v = transform.get_point_in_global_space(*v);
         }
 
         vertices
@@ -67,20 +68,26 @@ impl CollisionPrimative for Cuboid {
 }
 
 impl Collidable for Cuboid {
-    /// Calculates and returns the closest point on the Cuboid centred at the given position to the
-    /// given target point. The calculation is made by clamping the target to the min and max
-    /// vertices of the Cuboid.
-    fn closest_point_to(&self, centre: DVec3, target: DVec3) -> DVec3 {
-        let min = -self.extents + centre;
-        let max = self.extents + centre;
+    /// Calculates and returns the closest point on the Cuboid, with the given transform, to the
+    /// given target point.
+    fn closest_point_to(&self, transform: &PhysTransform, target: DVec3) -> DVec3 {
+        // The calculation is made by clamping the target to the min and max vertices of the Cuboid.
 
-        target.clamp(min, max)
+        // Convert the target into local coords.
+        let target_local = transform.get_point_in_local_space(target);
+        let min = -self.extents;
+        let max = self.extents;
+
+        let result_local = target_local.clamp(min, max);
+
+        // Convert back to global coords.
+        transform.get_point_in_global_space(result_local)
     }
 
-    /// Calculates and returns the shortest distance between the Cuboid, centred at the given
-    /// position, and the target point.
-    fn shortest_distance_to(&self, centre: DVec3, target: DVec3) -> f64 {
-        (target - self.closest_point_to(centre, target)).length()
+    /// Calculates and returns the shortest distance between the Cuboid, with the given transform,
+    /// and the target point in global coords.
+    fn shortest_distance_to(&self, transform: &PhysTransform, target: DVec3) -> f64 {
+        (target - self.closest_point_to(transform, target)).length()
     }
 }
 

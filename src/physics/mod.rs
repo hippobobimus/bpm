@@ -7,7 +7,7 @@ mod systems;
 // Re-exports
 pub use entity::PhysicsColliderBundle;
 
-/// 'use physics::prelude::*;' to import common components, bundles and plugins.
+/// 'use physics::prelude::*;' to import common components, shapes, bundles and plugins.
 pub mod prelude {
     #[doc(hidden)]
     pub use super::components::{
@@ -38,7 +38,7 @@ pub mod prelude {
 
 use bevy::prelude::*;
 
-use systems::{collision_detection, forces, integrator};
+use systems::{collision_detection, force_and_torque, integrator};
 
 /// A Bevy plugin that adds systems to support rigid-body physics, including; force handling,
 /// integration, collision detection and collision resolution (TBD).
@@ -50,17 +50,12 @@ impl Plugin for PhysicsPlugin {
             .add_startup_system(
                 collision_detection::initialize.system()
             )
-            .add_system(
-                forces::reset_force_and_torque_accumulators.system()
-                    .label("reset")
-            )
-            .add_system(
-                forces::force_accumulation.system()
+            .add_system_set(
+                force_and_torque::get_system_set()
                     .label("forces")
-                    .after("reset")
             )
-            .add_system(
-                integrator::integrator.system()
+            .add_system_set(
+                integrator::get_system_set()
                     .label("integrator")
                     .after("forces")
             )
@@ -69,5 +64,6 @@ impl Plugin for PhysicsPlugin {
                     .label("collision detection")
                     .after("integrator")
             );
+            // TODO collision resolution
     }
 }

@@ -23,7 +23,7 @@ impl Torque {
     }
 
     /// Returns the total torque accumulated as a vector.
-    pub fn vector(&self) -> &DVec3 {
-        &self.total
+    pub fn vector(&self) -> DVec3 {
+        self.total
     }
 }

@@ -1,27 +1,28 @@
 mod angular_velocity;
 mod boundary_collider;
 mod collider;
-mod drag;
+mod contact;
 mod force;
-mod gravity;
+mod force_and_torque_generators;
 mod inertia;
 mod mass;
 mod phys_transform;
-mod rotator;
-mod thrust;
 mod torque;
 mod velocity;
 
 pub use angular_velocity::AngularVelocity;
 pub use boundary_collider::BoundaryCollider;
 pub use collider::Collider;
-pub use drag::Drag;
+pub use contact::Contact;
 pub use force::Force;
-pub use gravity::Gravity;
+pub use force_and_torque_generators::{
+    Drag,
+    Gravity,
+    Rotator,
+    Thrust,
+};
 pub use inertia::InertiaTensor;
 pub use mass::Mass;
 pub use phys_transform::PhysTransform;
-pub use rotator::Rotator;
-pub use thrust::Thrust;
 pub use torque::Torque;
 pub use velocity::Velocity;

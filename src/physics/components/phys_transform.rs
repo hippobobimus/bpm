@@ -10,6 +10,7 @@ pub struct PhysTransform {
     pub translation: DVec3,
     // cache transform matrix to save re-calculating unnecessarily
     matrix: DMat4,
+    inverse_matrix: DMat4,
 }
 
 impl PhysTransform {
@@ -17,6 +18,7 @@ impl PhysTransform {
         translation: DVec3::ZERO,
         rotation: DQuat::IDENTITY,
         matrix: DMat4::IDENTITY,
+        inverse_matrix: DMat4::IDENTITY,
     };
 
     /// Creates the transform from the given rotation and translation.
@@ -26,7 +28,8 @@ impl PhysTransform {
             translation,
             ..Default::default()
         };
-        result.compute_matrix();
+        // calculate the derived data.
+        result.update();
         result
     }
 
@@ -67,21 +70,32 @@ impl PhysTransform {
         self.matrix
     }
 
-    /// Returns a DVec3 of this transform applied to the given value.
-    pub fn mul_vec3(&self, mut value: DVec3) -> DVec3 {
-        value = self.rotation * value;
-        value += self.translation;
-        value
+    /// Transforms the given point into local space using the inverse transformation matrix.
+    pub fn get_point_in_local_space(&self, point: DVec3) -> DVec3 {
+        self.inverse_matrix.transform_point3(point)
+    }
+
+    /// Transforms the given point into global space using the transformation matrix.
+    pub fn get_point_in_global_space(&self, point: DVec3) -> DVec3 {
+        self.matrix.transform_point3(point)
+    }
+
+    /// Transforms the given direction into local space using the inverse transformation matrix as
+    /// a rotation only.
+    pub fn get_direction_in_local_space(&self, direction: DVec3) -> DVec3 {
+        self.inverse_matrix.transform_vector3(direction)
+    }
+
+    /// Transforms the given direction into global space using the transformation matrix as a
+    /// rotation only.
+    pub fn get_direction_in_global_space(&self, direction: DVec3) -> DVec3 {
+        self.matrix.transform_vector3(direction)
     }
 
     /// Updates the cached transform matrix based on the current rotation and translation.
-    // TODO keep this or move to expiry methodology?
     pub fn update(&mut self) {
-        self.compute_matrix();
-    }
-
-    fn compute_matrix(&mut self) {
         self.matrix = DMat4::from_rotation_translation(self.rotation, self.translation);
+        self.inverse_matrix = self.matrix.inverse();
     }
 }
 

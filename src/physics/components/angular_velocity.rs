@@ -37,8 +37,8 @@ impl AngularVelocity {
     }
 
     /// Returns the vector form of the angular velocity.
-    pub fn vector(&self) -> &DVec3 {
-        &self.vector
+    pub fn vector(&self) -> DVec3 {
+        self.vector
     }
 
     /// Resets the angular velocity to zero.
