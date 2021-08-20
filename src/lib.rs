@@ -1,10 +1,13 @@
-//! # Physics Simulation
+//! # bpm - Bob's Physics Module
 //!
-//! A crate containing components of a physics simulation involving rigid body dynamics and elastic
-//! collisions.
+//! A simple physics engine integrated with the Bevy game engine.
+//!
+//! Incorporates basic 3D rigid-body dynamics including collisions.
 
-pub mod constants;
+/// Default settings.
+mod constants;
+/// Components, component bundles and plugins used to add physics interactions to your Bevy
+/// application.
 pub mod physics;
-pub mod runner;
-pub mod spawner;
+/// Components and plugins that support specific user interactions with Entitys' physics components.
 pub mod user_interaction;

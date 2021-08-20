@@ -21,7 +21,6 @@ use crate::{
     },
     physics::shapes::{
         Cuboid,
-        Plane,
         Sphere,
     },
 };
@@ -94,10 +93,11 @@ pub struct PhysicsBoundaryBundle {
 }
 
 impl PhysicsBoundaryBundle {
-    /// Creates a new PhysicsBoundaryBundle for a half-space with the given normal vector and transform.
-    pub fn new(normal: DVec3, transform: PhysTransform) -> Self {
+    /// Creates a new PhysicsBoundaryBundle for a half-space in the x-z plane, intersecting the origin and with a
+    /// normal in the y-axis, subsequently transformed by the given PhysTransform.
+    pub fn new(transform: PhysTransform) -> Self {
         Self {
-            boundary_collider: BoundaryCollider::new(Plane::new(normal)),
+            boundary_collider: BoundaryCollider::new(&transform),
             mass: Mass::from_inverse(0.0), // infinite mass, i.e. cannot move.
             transform,
         }
@@ -107,7 +107,7 @@ impl PhysicsBoundaryBundle {
 impl Default for PhysicsBoundaryBundle {
     fn default() -> Self {
         Self {
-            boundary_collider: BoundaryCollider::new(Plane::new(DVec3::Y)),
+            boundary_collider: BoundaryCollider::new(&PhysTransform::default()),
             mass: Mass::from_inverse(0.0), // infinite mass, i.e. cannot move.
             transform: Default::default(),
         }

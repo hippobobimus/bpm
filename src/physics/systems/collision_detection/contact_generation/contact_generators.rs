@@ -11,26 +11,6 @@ use crate::{
     physics::shapes::*,
 };
 
-// Boolean queries
-
-/// Evaluates whether the axis-aligned bounding box centred at the given position and the plane
-/// containing the given point intersect.
-pub fn aabb_and_plane_in_contact(a: &Aabb3D, a_pos: DVec3, p: &Plane, p_transform: &PhysTransform) -> bool {
-    // Test separating axis that intersects aabb centre and is parallel to plane normal;
-    // L(t) = a.centre + t * p.normal.
-
-    // Calculate projection radius of aabb onto L.
-    let r = a.extents().x * p.normal().x.abs() + a.extents().y * p.normal().y.abs();
-
-    // distance of aabb centre from plane.
-    let dist = p.shortest_distance_to(p_transform, a_pos);
-
-    // consider the negative half-space behind the plane to be solid.
-    dist <= r
-}
-
-// Generators
-
 /// Evaluates two spheres for intersection, generating a Contact if they are found to be
 /// intersecting. Contact normal is from sphere 1 to sphere 2.
 pub fn sphere_and_sphere(
@@ -81,7 +61,7 @@ pub fn sphere_and_half_space(
         return None;
     }
 
-    let normal = *p.normal();
+    let normal = p.normal();
     let penetration = s.radius() - d;
 
     Some(Contact {
@@ -138,7 +118,7 @@ pub fn cuboid_and_half_space(
     for vertex_position in c.vertices(c_transform).iter() {
         let vertex_dist = p.shortest_distance_to(p_transform, *vertex_position);
         if vertex_dist <= 0.0 {
-            let normal = *p.normal();
+            let normal = p.normal();
             // contact point is mid-point between vertex and plane.
             let point = *vertex_position + normal * (vertex_dist.abs() * 0.5);
             let penetration = vertex_dist.abs();
@@ -486,10 +466,9 @@ mod test {
         let r = 1.0;
         let s = Sphere::new(r);
 
-        let normal = DVec3::Y;
-        let p = Plane::new(normal);
-
+        // x-z plane with normal equivalent to y-axis.
         let p_transform = PhysTransform::IDENTITY;
+        let p = Plane::new(&p_transform);
 
         // NO PENETRATION.
         let s_transform = PhysTransform::from_translation(
@@ -611,9 +590,10 @@ mod test {
         let extents = DVec3::new(3.0, 3.0, 4.0);
         let c = Cuboid::new(extents);
 
-        let normal = DVec3::Y;
-        let p = Plane::new(normal);
+        // x-z plane with normal equivalent to y-axis.
         let p_transform = PhysTransform::IDENTITY;
+        let p = Plane::new(&p_transform);
+        let expected_normal = DVec3::Y;
 
         // NO PENETRATING VERTICES
         let c_transform = PhysTransform::from_translation(
@@ -632,7 +612,7 @@ mod test {
 
         assert_eq!(4, contacts.len());
         for contact in contacts.iter() {
-            assert_eq!(normal, contact.normal);
+            assert_eq!(expected_normal, contact.normal);
             assert_eq!(expected_penetration, contact.penetration);
             assert!((contact.point.y - -1.0).abs() < EPSILON);
         }
@@ -659,7 +639,7 @@ mod test {
 
         assert_eq!(2, contacts.len());
         for contact in contacts.iter() {
-            assert_eq!(normal, contact.normal);
+            assert_eq!(expected_normal, contact.normal);
             assert_eq!(expected_penetration, contact.penetration);
             assert!((contact.point.x - 0.0).abs() < EPSILON);
             assert!((contact.point.y - -0.5).abs() < EPSILON);
@@ -682,7 +662,7 @@ mod test {
         let contacts = cuboid_and_half_space(ent_c, &c, &p, &c_transform, &p_transform).unwrap();
 
         assert_eq!(1, contacts.len());
-        assert_eq!(normal, contacts[0].normal);
+        assert_eq!(expected_normal, contacts[0].normal);
         assert!((contacts[0].penetration - expected_penetration).abs() < EPSILON);
         assert!((contacts[0].point.x - 0.0).abs() < EPSILON);
         assert!((contacts[0].point.y - -expected_penetration / 2.0).abs() < EPSILON);

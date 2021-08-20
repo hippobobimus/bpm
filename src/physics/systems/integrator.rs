@@ -4,6 +4,7 @@ use crate::{
     constants,
     physics::components::{
         AngularVelocity,
+        BoundaryCollider,
         Force,
         InertiaTensor,
         Mass,
@@ -87,11 +88,18 @@ fn integrate(
 
 /// Updates any cached derived data that relies on the PhysTransform, for Entitys that have moved.
 fn update_cached_data(
-    mut query: Query<(&mut PhysTransform, &mut InertiaTensor), Changed<PhysTransform>>,
+    mut set: QuerySet<(
+        Query<(&mut PhysTransform, &mut InertiaTensor), Changed<PhysTransform>>,
+        Query<(&PhysTransform, &mut BoundaryCollider), Changed<PhysTransform>>,
+    )>,
 ) {
-    for (mut transform, mut inertia_tensor) in query.iter_mut() {
+    for (mut transform, mut inertia_tensor) in set.q0_mut().iter_mut() {
         transform.update();
         inertia_tensor.update(transform.matrix());
+    }
+    for (transform, mut boundary) in set.q1_mut().iter_mut() {
+        // update the cached plane normal in the boundary if the boundary has moved.
+        boundary.0.update(transform);
     }
 }
 

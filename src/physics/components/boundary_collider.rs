@@ -1,6 +1,7 @@
-use bevy::math::DVec3;
-
-use crate::physics::shapes::Plane;
+use crate::{
+    physics::shapes::Plane,
+    physics::components::PhysTransform,
+};
 
 /// A component that allows an entity to participate in collision physics by assigning a plane to
 /// it that acts as a rigid half-space.
@@ -8,15 +9,17 @@ use crate::physics::shapes::Plane;
 pub struct BoundaryCollider(pub Plane);
 
 impl BoundaryCollider {
-    /// Creates a new BoundaryCollider with the given Plane as a half-space collision boundary.
-    pub fn new(plane: Plane) -> Self {
-        Self(plane)
+    /// Creates a new BoundaryCollider based on the given PhysTransform applied to an x-z plane with
+    /// a normal in the positive y-axis.
+    pub fn new(transform: &PhysTransform) -> Self {
+        Self(Plane::new(transform))
     }
 }
 
 impl Default for BoundaryCollider {
-    /// Returns a BoundaryCollider formed by a plane with a normal equal to the positive y-axis.
+    /// Returns a BoundaryCollider formed by an x-z plane with a normal equal to the positive
+    /// y-axis.
     fn default() -> Self {
-        Self::new(Plane::new(DVec3::Y))
+        Self::new(&PhysTransform::IDENTITY)
     }
 }
