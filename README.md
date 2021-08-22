@@ -42,5 +42,5 @@ printed to the terminal.
 While developing this library I used a wide variety of resources. The most significant of these
 were:
 
-Ian Millington, Game Physics Engine Development (Second Edition), CRC Press [2010].
-Christer Ericson, Real-Time Collision Detection, CRC Press [2005].
+- Ian Millington, Game Physics Engine Development (Second Edition), CRC Press [2010].
+- Christer Ericson, Real-Time Collision Detection, CRC Press [2005].
