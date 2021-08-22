@@ -30,10 +30,12 @@ Clone this GitHub repository, navigate to its directory and run the following te
 
 The following examples are currently available:
 
-Primative Playground - A very simple example in which a number of static cuboids and spheres are
-spawned randomly in 3D space, along with a rotating 'fan' (elongated cuboid). A single sphere can
-be controlled with the keyboard and upon 'collision' with any other object or plane, the contact
-data generated will be printed to the terminal.
+#### primative_playground
+
+A very simple example in which a number of static cuboids and spheres are spawned randomly in 3D
+space, along with a rotating 'fan' (elongated cuboid). A single sphere can be controlled with the
+keyboard and upon 'collision' with any other object or plane, the contact data generated will be
+printed to the terminal.
 
 # References
 
