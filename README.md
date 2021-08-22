@@ -17,12 +17,12 @@ TBD
 Currently only a very basic example is available. This will change once collision resolution has
 been implemented, allowing for more interesting interactions.
 
-## Pre-requisites
+### Pre-requisites
 
 An up-to-date Rust installation is required (tested with v1.53). To install Rust, please visit
 their website [here](https://www.rust-lang.org/tools/install).
 
-## Run
+### Run
 
 Clone this GitHub repository, navigate to its directory and run the following terminal command.
 
