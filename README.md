@@ -66,8 +66,8 @@ printed to the terminal.
 
 Controls:
 
-Up/Down/Left/Right = movement in the x-z plane.
-Spacebar = movement upwards in the positive y direction.
+- Up/Down/Left/Right = movement in the x-z plane.
+- Spacebar = movement upwards in the positive y direction.
 
 # References
 
