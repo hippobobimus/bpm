@@ -39,6 +39,11 @@ impl Thrust {
         // torque.
         force_and_torque::add_force(self.force, force_accum);
     }
+
+    /// Returns the vector representation of the Thrust.
+    pub fn vector(&self) -> DVec3 {
+        self.force
+    }
 }
 
 impl Default for Thrust {

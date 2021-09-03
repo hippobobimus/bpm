@@ -26,14 +26,14 @@ pub fn get_system_set() -> SystemSet {
 /// body.
 fn force_and_torque_accumulation(
     mut q: QuerySet<(
-        Query<(&Drag, &mut Force, &Velocity)>,
+        Query<(&mut Drag, &mut Force, &Velocity)>,
         Query<(&Gravity, &mut Force, &Mass)>,
         Query<(&Thrust, &mut Force)>,
         Query<(&Rotator, &mut Force, &mut Torque, &PhysTransform)>,
     )>,
 ) {
     // Apply force generators.
-    for (drag, mut f, v) in q.q0_mut().iter_mut() {
+    for (mut drag, mut f, v) in q.q0_mut().iter_mut() {
         drag.update_force(&mut f, v.vector());
     }
     for (gravity, mut f, m) in q.q1_mut().iter_mut() {
