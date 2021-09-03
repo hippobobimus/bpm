@@ -38,7 +38,12 @@ pub mod prelude {
 
 use bevy::prelude::*;
 
-use systems::{collision_detection, force_and_torque, integrator};
+use systems::{
+    collision_detection,
+    collision_response,
+    force_and_torque,
+    integrator,
+};
 
 /// A Bevy plugin that adds systems to support rigid-body physics, including; force handling,
 /// integration, collision detection and collision resolution (TBD).
@@ -63,7 +68,11 @@ impl Plugin for PhysicsPlugin {
                 collision_detection::get_system_set()
                     .label("collision detection")
                     .after("integrator")
+            )
+            .add_system_set(
+                collision_response::get_system_set()
+                    .label("collision response")
+                    .after("collision detection")
             );
-            // TODO collision resolution
     }
 }
