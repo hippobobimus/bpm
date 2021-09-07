@@ -45,6 +45,14 @@ use systems::{
     integrator,
 };
 
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
+pub enum BpmPhysicsSystems {
+    ForceAndTorque,
+    Integrator,
+    CollisionDetection,
+    CollisionResponse,
+}
+
 /// A Bevy plugin that adds systems to support rigid-body physics, including; force handling,
 /// integration, collision detection and collision resolution (TBD).
 pub struct PhysicsPlugin;
@@ -57,22 +65,22 @@ impl Plugin for PhysicsPlugin {
             )
             .add_system_set(
                 force_and_torque::get_system_set()
-                    .label("forces")
+                    .label(BpmPhysicsSystems::ForceAndTorque)
             )
             .add_system_set(
                 integrator::get_system_set()
-                    .label("integrator")
-                    .after("forces")
+                    .label(BpmPhysicsSystems::Integrator)
+                    .after(BpmPhysicsSystems::ForceAndTorque)
             )
             .add_system_set(
                 collision_detection::get_system_set()
-                    .label("collision detection")
-                    .after("integrator")
+                    .label(BpmPhysicsSystems::CollisionDetection)
+                    .after(BpmPhysicsSystems::Integrator)
             )
             .add_system_set(
                 collision_response::get_system_set()
-                    .label("collision response")
-                    .after("collision detection")
+                    .label(BpmPhysicsSystems::CollisionResponse)
+                    .after(BpmPhysicsSystems::CollisionDetection)
             );
     }
 }
