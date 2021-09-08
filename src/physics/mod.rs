@@ -45,6 +45,11 @@ use systems::{
     integrator,
 };
 
+/// System label covering all physics systems.
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
+pub struct BpmPhysics;
+
+/// System labels covering physics sub-systems.
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
 pub enum BpmPhysicsSystems {
     ForceAndTorque,
@@ -53,8 +58,8 @@ pub enum BpmPhysicsSystems {
     CollisionResponse,
 }
 
-/// A Bevy plugin that adds systems to support rigid-body physics, including; force handling,
-/// integration, collision detection and collision resolution (TBD).
+/// A Bevy plugin that adds systems to support rigid-body physics, including; force/torque
+/// accumulation, integration, collision detection and collision resolution.
 pub struct PhysicsPlugin;
 
 impl Plugin for PhysicsPlugin {
@@ -66,20 +71,24 @@ impl Plugin for PhysicsPlugin {
             .add_system_set(
                 force_and_torque::get_system_set()
                     .label(BpmPhysicsSystems::ForceAndTorque)
+                    .label(BpmPhysics)
             )
             .add_system_set(
                 integrator::get_system_set()
                     .label(BpmPhysicsSystems::Integrator)
+                    .label(BpmPhysics)
                     .after(BpmPhysicsSystems::ForceAndTorque)
             )
             .add_system_set(
                 collision_detection::get_system_set()
                     .label(BpmPhysicsSystems::CollisionDetection)
+                    .label(BpmPhysics)
                     .after(BpmPhysicsSystems::Integrator)
             )
             .add_system_set(
                 collision_response::get_system_set()
                     .label(BpmPhysicsSystems::CollisionResponse)
+                    .label(BpmPhysics)
                     .after(BpmPhysicsSystems::CollisionDetection)
             );
     }
