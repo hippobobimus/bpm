@@ -9,7 +9,6 @@ use crate::{
     physics::components::{
         BoundaryCollider,
         Collider,
-        Contact,
         Mass,
         PhysTransform,
     },
@@ -19,24 +18,32 @@ use crate::{
         OctTree,
         OctTreeNode,
     },
-    user_interaction::Player,
 };
 
 /// A vector list containing possible collisions represented by the pair of Entitys concerned.
 type CollisionCandidates = Vec<(Entity, Entity)>;
 
+/// System labels covering sub-systems in the collision detection and contact generation process.
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
+enum CollisionDetectionSystems {
+    SpatialPartitioning,
+    BroadPhase,
+    NarrowPhase,
+}
+
 /// A SystemSet covering collision detection and contact generation processes.
 pub fn get_system_set() -> SystemSet {
     SystemSet::new()
         .with_system(update_tree.system()
-                     .label("tree update")
+                     .label(CollisionDetectionSystems::SpatialPartitioning)
         )
         .with_system(broad_phase.system()
-                     .label("broad phase")
-                     .after("tree update")
+                     .label(CollisionDetectionSystems::BroadPhase)
+                     .after(CollisionDetectionSystems::SpatialPartitioning)
         )
         .with_system(contact_generation.system()
-                     .after("broad phase")
+                     .label(CollisionDetectionSystems::NarrowPhase)
+                     .after(CollisionDetectionSystems::BroadPhase)
         )
 }
 
@@ -94,7 +101,7 @@ fn update_tree(
     }
 }
 
-/// Broad phase collision detection that generates collision candidates by finding appropriate in
+/// Broad phase collision detection that generates collision candidates by finding Entitys in
 /// close proximity using the OctTree's spatial partitioning.
 fn broad_phase(
     tree: Res<OctTree<Entity>>,
@@ -144,11 +151,12 @@ fn broad_phase(
     helper(&*tree, root_node, &mut stack, &mut candidates);
 }
 
-/// Narrow-phase collision detection and contact generation.
+/// Narrow-phase collision detection and contact generation. Any contacts found are added to the
+/// ECS.
 fn contact_generation(
+    mut commands: Commands,
     collider_query: Query<(Entity, &Collider, &PhysTransform)>,
     boundary_query: Query<(&BoundaryCollider, &PhysTransform)>,
-    player_query: Query<Entity, With<Player>>,
     mut candidates: ResMut<CollisionCandidates>,
 ) {
     // work through the collision candidates list of primatives produced by the OctTree and generate
@@ -166,8 +174,12 @@ fn contact_generation(
                 transform_b,
             );
 
+            // spawn entity(s) holding each discovered contact as a component.
             if let Some(c) = contacts {
-                process_contacts(c, &player_query);
+                for contact in c {
+                    commands.spawn()
+                        .insert(contact);
+                }
             }
         }
     }
@@ -183,22 +195,13 @@ fn contact_generation(
                 coll_transform,
             );
 
+            // spawn entity(s) holding each discovered contact as a component.
             if let Some(c) = contacts {
-                process_contacts(c, &player_query);
+                for contact in c {
+                    commands.spawn()
+                        .insert(contact);
+                }
             }
-        }
-    }
-}
-
-// TODO currently just prints contacts that occur with the Player Entity.
-fn process_contacts(
-    contacts: Vec<Contact>,
-    player_query: &Query<Entity, With<Player>>,
-) {
-    let player_ent = player_query.single().unwrap();
-    for contact in contacts.iter() {
-        if contact.entities.0 == Some(player_ent) || contact.entities.1 == Some(player_ent) {
-            println!("{:?}", contact);
         }
     }
 }
