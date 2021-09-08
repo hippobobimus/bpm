@@ -14,19 +14,29 @@ use crate::{
     },
 };
 
+/// System labels covering sub-systems in the integration process.
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
+enum IntegratorSystems {
+    Integrate,
+    UpdateCache,
+    ResetAccumulators,
+}
+
 /// A SystemSet that runs the integrator to update velocity (including angular velocity) and
 /// transform components, subsequently updating any cached data that relies on the current
 /// transform and resetting the accumulators.
 pub fn get_system_set() -> SystemSet {
     SystemSet::new()
         .with_system(integrate.system()
-                     .label("integrate")
+                     .label(IntegratorSystems::Integrate)
         )
         .with_system(update_cached_data.system()
-                     .after("integrate")
+                     .label(IntegratorSystems::UpdateCache)
+                     .after(IntegratorSystems::Integrate)
         )
         .with_system(reset_accumulators.system()
-                     .after("integrate")
+                     .label(IntegratorSystems::ResetAccumulators)
+                     .after(IntegratorSystems::Integrate)
         )
 }
 
@@ -49,10 +59,10 @@ fn integrate(
     let dt_secs = time.delta_seconds_f64();
 
     for (mut ang_v, f, inertia_tensor, m, mut transform, torque,
-         mut bevy_transform, mut v) in query.iter_mut() {
-
+         mut bevy_transform, mut v) in query.iter_mut()
+    {
         // Infinite mass objects cannot move.
-        if m.is_infinite() { break };
+        if m.is_infinite() { continue };
 
         // Calculate linear acceleration from currently applied forces.
         let accel = f.vector() * m.inverse();
