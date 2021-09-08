@@ -63,6 +63,17 @@ impl PhysicsColliderBundle {
             ..Default::default()
         }
     }
+
+    /// Creates a new PhysicsColliderBundle for a fixed (infinite mass) spherical body with transform and extents.
+    pub fn fixed_sphere(radius: f64, transform: PhysTransform) -> Self {
+        Self {
+            collider: Collider::new(Sphere::new(radius)),
+            inertia_tensor: InertiaTensor::fixed_sphere(),
+            mass: Mass::from_inverse(0.0),
+            transform,
+            ..Default::default()
+        }
+    }
 }
 
 impl Default for PhysicsColliderBundle {
