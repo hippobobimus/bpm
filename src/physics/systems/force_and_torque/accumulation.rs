@@ -14,11 +14,17 @@ use crate::physics::components::{
     Velocity,
 };
 
+/// Force and torque system labels.
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
+enum ForceAndTorqueSystems {
+    Accumulator,
+}
+
 /// A SystemSet that resets and then recalculates the forces and torques applied on a body.
 pub fn get_system_set() -> SystemSet {
     SystemSet::new()
         .with_system(force_and_torque_accumulation.system()
-                     .label("accumulator")
+                     .label(ForceAndTorqueSystems::Accumulator)
         )
 }
 
@@ -49,6 +55,4 @@ fn force_and_torque_accumulation(
     for (rotator, mut f, mut torque, transform) in q.q3_mut().iter_mut() {
         rotator.update_force_and_torque(&mut f, &mut torque, transform);
     }
-
-    // TODO apply torques from collisions.
 }
