@@ -8,7 +8,7 @@ use bevy::{
 /// Entitys involved in the contact, the point of contact, amount of inter-penetration and the
 /// contact normal vector.
 pub struct Contact {
-    pub entities: (Option<Entity>, Option<Entity>),
+    pub entities: [Option<Entity>; 2],
     pub normal: DVec3,
     pub penetration: f64,
     pub point: DVec3,

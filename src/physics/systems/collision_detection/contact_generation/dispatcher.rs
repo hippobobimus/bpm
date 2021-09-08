@@ -51,22 +51,22 @@ pub fn generate_primative_contacts(
             transform_b,
         ).map(|c| vec![c])
     }
-    if a_is_cuboid && b_is_sphere {
-        return contact_generators::cuboid_and_sphere(
+    if a_is_sphere && b_is_cuboid {
+        return contact_generators::sphere_and_cuboid(
             ent_a,
             ent_b,
-            a.downcast_ref::<Cuboid>().unwrap(),
-            b.downcast_ref::<Sphere>().unwrap(),
+            a.downcast_ref::<Sphere>().unwrap(),
+            b.downcast_ref::<Cuboid>().unwrap(),
             transform_a,
             transform_b,
         ).map(|c| vec![c])
     }
-    if a_is_sphere && b_is_cuboid {
-        return contact_generators::cuboid_and_sphere(
+    if a_is_cuboid && b_is_sphere {
+        return contact_generators::sphere_and_cuboid(
             ent_b,
             ent_a,
-            b.downcast_ref::<Cuboid>().unwrap(),
-            a.downcast_ref::<Sphere>().unwrap(),
+            b.downcast_ref::<Sphere>().unwrap(),
+            a.downcast_ref::<Cuboid>().unwrap(),
             transform_b,
             transform_a,
         ).map(|c| vec![c])
@@ -89,19 +89,19 @@ pub fn generate_boundary_contacts(
     let other_is_sphere = other.is::<Sphere>();
 
     if other_is_sphere {
-        return contact_generators::sphere_and_half_space(
+        return contact_generators::half_space_and_sphere(
             ent_other,
-            other.downcast_ref::<Sphere>().unwrap(),
             bnd,
+            other.downcast_ref::<Sphere>().unwrap(),
             transform_other,
             transform_bnd,
         ).map(|c| vec![c])
     }
     if other_is_cuboid {
-        return contact_generators::cuboid_and_half_space(
+        return contact_generators::half_space_and_cuboid(
             ent_other,
-            other.downcast_ref::<Cuboid>().unwrap(),
             bnd,
+            other.downcast_ref::<Cuboid>().unwrap(),
             transform_other,
             transform_bnd,
         )
