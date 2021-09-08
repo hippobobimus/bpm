@@ -41,13 +41,19 @@ impl InertiaTensor {
         Self::new(DMat3::from_diagonal(DVec3::new(element, element, element)))
     }
 
+    /// Instantiates an inertia tensor for a solid sphere with the given mass and radius.
+    pub fn fixed_sphere() -> Self {
+        let element = f64::INFINITY;
+
+        Self {
+            tensor: DMat3::from_diagonal(DVec3::new(element, element, element)),
+            inverse: DMat3::ZERO,
+            inverse_global: DMat3::ZERO,
+        }
+    }
+
     // TODO inertia tensors for other standard shapes.
     // Ellipsoid, shell-sphere, cylinder, cone, hemisphere...
-
-    /// Returns the inertia tensor with respect to local body coords.
-    pub fn tensor(&self) -> DMat3 {
-        self.tensor
-    }
 
     /// Returns the inverse inertia tensor with respect to local body coords.
     pub fn inverse(&self) -> DMat3 {
