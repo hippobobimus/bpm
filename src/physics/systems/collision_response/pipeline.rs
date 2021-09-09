@@ -17,150 +17,132 @@ use crate::{
         PhysTransform,
         Velocity,
     },
+    user_interaction::components::Player,
 };
 
-/// A SystemSet that applies a dynamic response to Entitys that are in collision.
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
+/// System labels covering collision response sub-systems.
+enum CollisionResponseSystems {
+    CalculateImpulse,
+}
+
+/// A SystemSet that calculates and applies a dynamic response to Entitys that are in collision.
 pub fn get_system_set() -> SystemSet {
     SystemSet::new()
         .with_system(calc_impulse.system()
-                     .label("calculate response")
-        )
-        .with_system(apply_impulse.system()
-                     .label("apply response")
-                     .after("calculate response")
+                     .label(CollisionResponseSystems::CalculateImpulse)
         )
 }
 
-
-// SYSTEM: Apply calculated impulse to update velocity of entities involved in the collision.
-fn apply_impulse(
-    mut commands: Commands,
-    mut query: Query<(Entity, &Impulse, &ImpulsiveTorque, &InertiaTensor, &Mass, &mut Velocity, &mut AngularVelocity)>,
-) {
-    for (ent, impulse, impulsive_torque, inertia_tensor, mass, mut velocity, mut ang_velocity) in query.iter_mut() {
-        println!("Impulse: {}", impulse.0);
-        println!("Impulsive torque: {}", impulsive_torque.0);
-
-        velocity.add(mass.inverse() * impulse.0);
-        // TODO limit large values.
-        //ang_velocity.add(inertia_tensor.inverse_global().mul_vec3(impulsive_torque.0));
-
-        commands.entity(ent).remove::<Impulse>();
-        commands.entity(ent).remove::<ImpulsiveTorque>();
-        // TODO create a bundle and then use remove_bundle
-    }
-}
-
-// SYSTEM: Calculate impulse and impulsive torque to be applied to each colliding entity.
+/// A system that iterates through available collision contacts, calculating and applying
+/// appropriate impulse and impulsive torques to resolve them.
 fn calc_impulse(
     mut commands: Commands,
     contact_query: Query<(Entity, &Contact)>,
     mut q: QuerySet<(
         Query<(&AngularVelocity, &InertiaTensor, &Mass, &PhysTransform, &Velocity)>,
         Query<(&mut PhysTransform, &mut Transform)>,
+        Query<(&InertiaTensor, &Mass, &mut Velocity, &mut AngularVelocity), With<Player>>,
     )>,
 ) {
     for (contact_entity, contact) in contact_query.iter() {
-        println!("contact: {:?}", contact);
-        // transformation matrix to go from global coords to contact coords.
-        let contact_transform = calc_contact_basis(contact.normal);
+        info!("processing contact: {:?}", contact);
 
-        let mut delta_vel_per_unit_impulse = 0.0;
-        let mut closing_vel_global = DVec3::ZERO;
+        // transformation matrices to go between global coords and contact coords.
+        let contact_to_global_transform = calc_contact_basis(contact.normal);
+        let global_to_contact_transform = contact_to_global_transform.transpose();
+
+        info!("contact to global transform {}", contact_to_global_transform);
+        info!("global to contact transform {}", contact_to_global_transform.transpose());
+
+        let mut inverse_mass = [0.0, 0.0];
 
         let mut relative_contact_position = [DVec3::ZERO, DVec3::ZERO];
-        if let Some(entity) = contact.entities[0] {
-            let (angular_velocity, inertia_tensor, mass, phys_transform, velocity) = q.q0().get(entity)
-                .expect("Invalid contact entity");
+        let mut delta_velocity_per_unit_impulse = 0.0;
+        let mut contact_velocity = [DVec3::ZERO, DVec3::ZERO];
 
-            relative_contact_position[0] = contact.point - phys_transform.translation();
+        for (i, entity_option) in contact.entities.iter().enumerate() {
+            if let Some(entity) = entity_option {
+                let (angular_velocity, inertia_tensor, mass, phys_transform, velocity) =
+                    q.q0().get(*entity).expect("Invalid contact entity");
 
-            delta_vel_per_unit_impulse += calc_velocity_per_unit_impulse(
-                contact_transform,
-                mass.inverse(),
-                inertia_tensor.inverse_global(),
-                contact.normal,
-                relative_contact_position[0],
-            );
+                inverse_mass[i] = mass.inverse();
 
-            closing_vel_global += calc_contact_velocity(
-                contact_transform,
-                relative_contact_position[0],
-                angular_velocity.vector(),
-                velocity.vector(),
-            );
-        }
-        if let Some(entity) = contact.entities[1] {
-            let (angular_velocity, inertia_tensor, mass, phys_transform, velocity) = q.q0().get(entity)
-                .expect("Invalid contact entity");
+                relative_contact_position[i] = contact.point - phys_transform.translation();
 
-            relative_contact_position[1] = contact.point - phys_transform.translation();
+                delta_velocity_per_unit_impulse += calc_normal_velocity_per_unit_impulse(
+                    global_to_contact_transform,
+                    mass.inverse(),
+                    inertia_tensor.inverse_global(),
+                    contact.normal,
+                    relative_contact_position[i],
+                );
 
-            delta_vel_per_unit_impulse += calc_velocity_per_unit_impulse(
-                contact_transform,
-                mass.inverse(),
-                inertia_tensor.inverse_global(),
-                contact.normal,
-                relative_contact_position[1],
-            );
-
-            // subtract second value
-            closing_vel_global -= calc_contact_velocity(
-                contact_transform,
-                relative_contact_position[1],
-                angular_velocity.vector(),
-                velocity.vector(),
-            );
+                contact_velocity[i] = calc_contact_velocity(
+                    global_to_contact_transform,
+                    relative_contact_position[i],
+                    angular_velocity.vector(),
+                    velocity.vector(),
+                );
+            }
         }
 
-        // transform closing velocity into contact coords.
-        let closing_vel_contact = contact_transform.mul_vec3(closing_vel_global);
+        let closing_velocity_contact = contact_velocity[0] - contact_velocity[1];
 
-        // desired change in velocity = -(1 + c) * closing velocity in direction of contact normal.
+        info!("closing velocity in contact coords {}", closing_velocity_contact);
+        info!("delta velocity along normal per unit impulse {}", delta_velocity_per_unit_impulse);
+
+        // Desired change in velocity = -(1 + c) * closing velocity in direction of contact normal.
         let restitution = 0.4; // TODO make this contact specific.
-        let delta_vel = -(1.0 + restitution) * closing_vel_contact.x;
+        let delta_velocity = -(1.0 + restitution) * closing_velocity_contact.x;
 
-        // frictionless, so impulse is only in direction of contact normal.
+        // Frictionless, so impulse is only in direction of contact normal.
         let mut impulse_contact = DVec3::new(
-            delta_vel / delta_vel_per_unit_impulse,
+            delta_velocity / delta_velocity_per_unit_impulse,
             0.0,
             0.0,
         );
 
-        println!("impulse contact before {}", impulse_contact);
-        // Make sure normal impulse is > 0.
+        info!("impulse in contact coords before checking sign {}", impulse_contact);
+
+        // Make sure normal impulse is < 0. i.e. it acts in the opposite direction to the contact
+        // normal, pushing the 0th body away from the contact.
         impulse_contact.x = impulse_contact.x.min(0.0);
-        println!("impulse contact after {}", impulse_contact);
+        info!("impulse in contact coords after {}", impulse_contact);
 
-        // transform impulse back into global coords. The transform is just a rotation, so we can
-        // use the transpose instead of the inverse to speed up calculation.
-        let impulse = contact_transform.transpose().mul_vec3(impulse_contact);
-        println!("impulse global after {}", impulse);
+        // Transform impulse back into global coords.
+        let impulse = contact_to_global_transform.mul_vec3(impulse_contact);
+        info!("impulse in global coords {}", impulse);
 
-        // add impulse and impulsive torque to both bodies, with the direction of the impulse
-        // reversed on the 2nd body.
-        if let Some(entity) = contact.entities[0] {
-            commands.entity(entity).insert(Impulse(impulse));
-            let impulsive_torque = relative_contact_position[0].cross(impulse);
-            commands.entity(entity).insert(ImpulsiveTorque(impulsive_torque));
-        }
-        if let Some(entity) = contact.entities[1] {
-            commands.entity(entity).insert(Impulse(-impulse));
-            let impulsive_torque = relative_contact_position[1].cross(-impulse);
-            commands.entity(entity).insert(ImpulsiveTorque(impulsive_torque));
+        // Add impulse and impulsive torque to both bodies, reversing the impulse direction for the
+        // subsequent body.
+        for ((i, entity_option), c) in contact.entities.iter().enumerate().zip([1.0, -1.0].iter()) {
+            if let Some(entity) = entity_option {
+                let impulsive_torque = relative_contact_position[i].cross(*c * impulse);
+
+                if let Ok((inertia_tensor, mass, mut velocity, mut ang_velocity)) = q.q2_mut().get_mut(*entity) {
+                    velocity.add(mass.inverse() * c * impulse);
+                    ang_velocity.add(inertia_tensor.inverse_global().mul_vec3(impulsive_torque));
+                }
+
+                commands.entity(*entity).insert(Impulse(*c * impulse));
+                commands.entity(*entity).insert(ImpulsiveTorque(*c * impulsive_torque));
+            }
         }
 
         // Resolve interpenetration.
         if let Some(entity) = contact.entities[0] {
             let (mut phys_transform, mut transform) = q.q1_mut().get_mut(entity).expect("Entity does not exist!");
 
-            phys_transform.translation -= contact.normal * contact.penetration * 0.5;
+            let factor = inverse_mass[0] / (inverse_mass[0] + inverse_mass[1]);
+            phys_transform.translation -= contact.normal * contact.penetration * factor;
             transform.translation = phys_transform.translation.as_f32();
         }
         if let Some(entity) = contact.entities[1] {
             let (mut phys_transform, mut transform) = q.q1_mut().get_mut(entity).expect("Entity does not exist!");
 
-            phys_transform.translation += contact.normal * contact.penetration * 0.5;
+            let factor = inverse_mass[1] / (inverse_mass[0] + inverse_mass[1]);
+            phys_transform.translation += contact.normal * contact.penetration * factor;
             transform.translation = phys_transform.translation.as_f32();
         }
 
@@ -169,12 +151,13 @@ fn calc_impulse(
     }
 }
 
+// --- Helper methods
+
 /// Takes the contact normal in global space and returns an arbitrary orthonormal basis for the
 /// contact as a DMat3. The matrix represents transformation from contact space into global space.
 /// Note, the origin of contact space is the global origin to simplify calculations (the transform
 /// is a rotation only, so its inverse is the transpose).
 fn calc_contact_basis(normal: DVec3) -> DMat3 {
-
     // The normal will be the new x-axis.
     // Initially, choose the y-axis to be either the global x-axis or global y-axis, whichever is
     // further from the normal to avoid the parallel case.
@@ -188,7 +171,7 @@ fn calc_contact_basis(normal: DVec3) -> DMat3 {
 
     // z is the normalised vector at right angles to the normal and the chosen y-axis.
     let z = normal.cross(y).normalize();
-    
+
     // Then y must be the vector at right angles to this z axis and the normal.
     y = z.cross(normal);
 
@@ -199,45 +182,58 @@ fn calc_contact_basis(normal: DVec3) -> DMat3 {
     )
 }
 
-// local contact coords
-fn calc_velocity_per_unit_impulse(
-    contact_transform: DMat3,
+/// Calculates the change in velocity along the contact normal per unit of impulse and returns it
+/// as a f64 value.
+fn calc_normal_velocity_per_unit_impulse(
+    global_to_contact_transform: DMat3,
     inverse_mass: f64,
     inverse_inertia_tensor: DMat3,
     normal: DVec3,
     relative_contact_position: DVec3,
 ) -> f64 {
-    // linear velocity change per unit impulse
+    // Normal linear velocity change per unit impulse
+    // v_lin = inverse_mass * J --> replace impulse vector with contact normal.
     let linear_component = inverse_mass;
 
-    // angular velocity change per unit impulse
-    let torque = relative_contact_position.cross(normal);
-    let angular_velocity = inverse_inertia_tensor.mul_vec3(torque);
-    let velocity_global = angular_velocity.cross(relative_contact_position);
-    // transform to contact coords
-    let velocity = contact_transform.mul_vec3(velocity_global);
-    let angular_component = velocity.x;
+    // Angular velocity change per unit impulse
+    // delta ang vel = inverse inertia tensor * impulsive torque
+    // where; impulsive torque = rel position x J --> replace J vector with contact normal.
+    let impulsive_torque_per_unit_impulse = relative_contact_position.cross(normal);
 
+    let angular_velocity_per_unit_impulse =
+        inverse_inertia_tensor.mul_vec3(impulsive_torque_per_unit_impulse);
 
-    // Overall
+    // The angular component of the velocity change in global coords.
+    let angular_component_global =
+        angular_velocity_per_unit_impulse.cross(relative_contact_position);
+
+    // Transform to contact coords and take the component along the contact normal (x-axis in
+    // contact coords).
+    let angular_component_vector = global_to_contact_transform.mul_vec3(angular_component_global);
+    let angular_component = angular_component_vector.x;
+
+    // Combine the angular and linear parts to get the result.
     angular_component + linear_component
 }
 
-// local contact coords
+/// Returns the velocity of the contact point in contact coords as a DVec3.
 fn calc_contact_velocity(
-    contact_transform: DMat3,
+    global_to_contact_transform: DMat3,
     relative_contact_position: DVec3,
     angular_velocity: DVec3,
     velocity: DVec3,
 ) -> DVec3 {
-    // global coords
-    // angular component
-    let mut result = angular_velocity.cross(relative_contact_position);
-    // linear component
-    result += velocity;
+    // velocity = linear velocity + (angular velocity x relative position).
+
+    // first calculate velocity in global coords.
+    let mut result = velocity + angular_velocity.cross(relative_contact_position);
+
+    info!("contact velocity in global coords = {}", result);
 
     // convert to contact coords
-    result = contact_transform.mul_vec3(result);
+    result = global_to_contact_transform.mul_vec3(result);
+
+    info!("contact velocity in contact coords = {}", result);
 
     result
 }
@@ -247,7 +243,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_calc_contact_velocity() {
+    fn test_calc_contact_basis() {
         let normal = DVec3::Y;
         let basis = calc_contact_basis(normal);
 
@@ -263,5 +259,25 @@ mod test {
         assert_eq!(normal, basis.mul_vec3(DVec3::X));
         assert_eq!(DVec3::Y, basis.mul_vec3(DVec3::Y));
         assert_eq!(DVec3::Z, basis.mul_vec3(DVec3::Z));
+    }
+
+    #[test]
+    fn test_calc_contact_velocity() {
+        let normal = DVec3::Z;
+        let basis = calc_contact_basis(normal);
+        let contact_point = DVec3::new(2.0, 3.0, 2.0);
+        let position = DVec3::new(2.0, 2.0, 2.0);
+        let relative_position = contact_point - position;
+        let ang_vel = DVec3::ZERO;
+        let vel = DVec3::new(0.0, 0.0, 5.0);
+
+        let result = calc_contact_velocity(
+            basis,
+            relative_position,
+            ang_vel,
+            vel,
+        );
+
+        assert_eq!(DVec3::new(5.0, 0.0, 0.0), result);
     }
 }
