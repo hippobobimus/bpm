@@ -64,32 +64,42 @@ pub struct PhysicsPlugin;
 
 impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut AppBuilder) {
+        // Up to and including contact generation, but nothing that depends on those contacts.
+        static PRIMARY: &str = "Primary";
+        // Systems that utilise contact entities generated during the current frame.
+        static SECONDARY: &str = "Secondary";
+
         app
+            .add_stage_after(CoreStage::Update, PRIMARY, SystemStage::parallel())
+            .add_stage_after(PRIMARY, SECONDARY, SystemStage::parallel())
             .add_startup_system(
                 collision_detection::initialize.system()
             )
-            .add_system_set(
+            .add_system_set_to_stage(
+                PRIMARY,
                 force_and_torque::get_system_set()
                     .label(BpmPhysicsSystems::ForceAndTorque)
                     .label(BpmPhysics)
             )
-            .add_system_set(
+            .add_system_set_to_stage(
+                PRIMARY,
                 integrator::get_system_set()
                     .label(BpmPhysicsSystems::Integrator)
                     .label(BpmPhysics)
                     .after(BpmPhysicsSystems::ForceAndTorque)
             )
-            .add_system_set(
+            .add_system_set_to_stage(
+                PRIMARY,
                 collision_detection::get_system_set()
                     .label(BpmPhysicsSystems::CollisionDetection)
                     .label(BpmPhysics)
                     .after(BpmPhysicsSystems::Integrator)
             )
-            .add_system_set(
+            .add_system_set_to_stage(
+                SECONDARY,
                 collision_response::get_system_set()
                     .label(BpmPhysicsSystems::CollisionResponse)
                     .label(BpmPhysics)
-                    .after(BpmPhysicsSystems::CollisionDetection)
             );
     }
 }
