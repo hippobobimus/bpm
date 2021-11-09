@@ -39,10 +39,12 @@ pub mod prelude {
 use bevy::prelude::*;
 
 use systems::{
+    cache_update,
     collision_detection,
     collision_response,
     force_and_torque,
     integrator,
+    transform_sync,
 };
 
 /// System label covering all physics systems.
@@ -56,6 +58,9 @@ pub enum BpmPhysicsSystems {
     Integrator,
     CollisionDetection,
     CollisionResponse,
+    TransformSync,
+    CacheUpdatePrimary,
+    CacheUpdateSecondary,
 }
 
 /// A Bevy plugin that adds systems to support rigid-body physics, including; force/torque
@@ -90,16 +95,37 @@ impl Plugin for PhysicsPlugin {
             )
             .add_system_set_to_stage(
                 PRIMARY,
+                cache_update::get_system_set()
+                    .label(BpmPhysicsSystems::CacheUpdatePrimary)
+                    .label(BpmPhysics)
+                    .after(BpmPhysicsSystems::Integrator)
+            )
+            .add_system_set_to_stage(
+                PRIMARY,
                 collision_detection::get_system_set()
                     .label(BpmPhysicsSystems::CollisionDetection)
                     .label(BpmPhysics)
-                    .after(BpmPhysicsSystems::Integrator)
+                    .after(BpmPhysicsSystems::CacheUpdatePrimary)
             )
             .add_system_set_to_stage(
                 SECONDARY,
                 collision_response::get_system_set()
                     .label(BpmPhysicsSystems::CollisionResponse)
                     .label(BpmPhysics)
+            )
+            .add_system_set_to_stage(
+                SECONDARY,
+                cache_update::get_system_set()
+                    .label(BpmPhysicsSystems::CacheUpdateSecondary)
+                    .label(BpmPhysics)
+                    .after(BpmPhysicsSystems::CollisionResponse)
+            )
+            .add_system_set_to_stage(
+                SECONDARY,
+                transform_sync::get_system_set()
+                    .label(BpmPhysicsSystems::TransformSync)
+                    .label(BpmPhysics)
+                    .after(BpmPhysicsSystems::CollisionResponse)
             );
     }
 }
