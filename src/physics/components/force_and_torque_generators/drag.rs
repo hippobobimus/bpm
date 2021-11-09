@@ -11,7 +11,7 @@ use crate::{
 pub struct Drag {
     k1: f64,
     k2: f64,
-    last: DVec3,
+    last: DVec3, // cached value.
 }
 
 impl Drag {

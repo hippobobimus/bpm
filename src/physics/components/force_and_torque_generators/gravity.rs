@@ -28,6 +28,11 @@ impl Gravity {
     fn force(&self, mass: f64) -> DVec3 {
         mass * self.g
     }
+
+    /// Returns the current force of gravity as a vector.
+    pub fn vector(&self, mass: f64) -> DVec3 {
+        self.force(mass)
+    }
 }
 
 impl Default for Gravity {
