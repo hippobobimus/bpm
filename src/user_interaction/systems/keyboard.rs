@@ -34,6 +34,12 @@ lazy_static! {
         map.insert(KeyCode::Up, -DVec3::Z);
         map.insert(KeyCode::Down, DVec3::Z);
         map.insert(KeyCode::Space, DVec3::Y);
+        map.insert(KeyCode::H, -DVec3::X);
+        map.insert(KeyCode::L, DVec3::X);
+        map.insert(KeyCode::K, -DVec3::Z);
+        map.insert(KeyCode::J, DVec3::Z);
+        map.insert(KeyCode::W, DVec3::Y);
+        map.insert(KeyCode::S, -DVec3::Y);
         map
     };
 }
@@ -41,18 +47,16 @@ lazy_static! {
 /// A system that manages keyboard interaction that applies thrust to an entity.
 fn movement(
     keys: Res<Input<KeyCode>>,
-    mut query: Query<(&KeyboardControlled, &Player, &mut Thrust)>,
+    mut query: Query<&mut Thrust, (With<KeyboardControlled>, With<Player>)>,
 ) {
     for (key_code, dir) in MOVEMENT_KEYS_MAP.iter() {
         if keys.just_pressed(*key_code) {
-            let (_kb, _player, mut thrust) = query.single_mut()
-                .expect("There should only be one player!");
+            let mut thrust = query.single_mut().expect("There should only be one player!");
 
             thrust.engage(dir);
         }
         if keys.just_released(*key_code) {
-            let (_kb, _player, mut thrust) = query.single_mut()
-                .expect("There should only be one player!");
+            let mut thrust = query.single_mut().expect("There should only be one player!");
 
             thrust.disengage(dir);
         }
