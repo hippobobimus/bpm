@@ -11,9 +11,11 @@ use crate::{
     physics::shapes::*,
 };
 
-// In general, the generated contact normal must point from the first body towards the
-// second. e.g. for the function 'half_space_and_sphere' the normal points from the half space to
-// the sphere.
+// In general, the generated contact normal must point from the first body in the returned
+// Contact.entities Vec towards the other body involved in the collision whether or not it is
+// referenced in the Vec.
+// e.g. for the function 'half_space_and_sphere' the normal points from the sphere to the half
+// space since only the sphere Entity is stored in the Vec.
 
 /// Evaluates two spheres for intersection, generating a Contact if they are found to be
 /// intersecting. Contact normal is from sphere 1 to sphere 2.
@@ -39,17 +41,20 @@ pub fn sphere_and_sphere(
     let normal = midline.normalize();
     let point = s1_centre + midline * 0.5;
     let penetration = sum_of_radii - d;
+    let relative_points = vec![point - s1_transform.translation, point - s2_transform.translation];
 
     Some(Contact {
-        entities: [Some(ent1), Some(ent2)],
+        entities: vec![ent1, ent2],
         normal,
         penetration,
         point,
+        relative_points,
     })
 }
 
 /// Evaluates a sphere and half-space for intersection, generating a Contact if they are found to
-/// be intersecting. The contact normal is the half-space normal.
+/// be intersecting. The contact normal is the inverted half-space normal. The half-space is
+/// considered to be immovable.
 pub fn half_space_and_sphere(
     ent_sphere: Entity,
     plane: &Plane,
@@ -65,20 +70,22 @@ pub fn half_space_and_sphere(
         return None;
     }
 
-    let normal = plane.normal();
+    let normal = -plane.normal();
     let penetration = sphere.radius() - d;
+    let relative_points = vec![point - sphere_transform.translation];
 
     Some(Contact {
-        entities: [None, Some(ent_sphere)],
+        entities: vec![ent_sphere],
         normal,
         penetration,
         point,
+        relative_points,
     })
 }
 
 /// Evaluates a cuboid and sphere for intersection, generating a Contact if they are found to be
-/// intersecting. Contact normal is taken from a sphere face normal in the direction cuboid to
-/// sphere.
+/// intersecting. Contact normal is taken from a sphere face normal in the direction sphere to
+/// cuboid.
 pub fn sphere_and_cuboid(
     ent_sphere: Entity,
     ent_cuboid: Entity,
@@ -102,15 +109,17 @@ pub fn sphere_and_cuboid(
     let normal = (closest_point - sphere_centre).normalize();
 
     Some(Contact {
-        entities: [Some(ent_sphere), Some(ent_cuboid)],
+        entities: vec![ent_sphere, ent_cuboid],
         normal,
         penetration: shortest_dist.abs(),
         point: closest_point,
+        relative_points: vec![closest_point - sphere_transform.translation,
+            closest_point - cuboid_transform.translation],
     })
 }
 
 /// Evaluates a half-space and cuboid for intersection, generating Contact(s) if they are found to
-/// be intersecting. Contact normal is the half-space normal.
+/// be intersecting. Contact normal is the inverted half-space normal.
 pub fn half_space_and_cuboid(
     ent_cuboid: Entity,
     plane: &Plane,
@@ -123,16 +132,17 @@ pub fn half_space_and_cuboid(
     for vertex_position in cuboid.vertices(cuboid_transform).iter() {
         let vertex_dist = plane.shortest_distance_to(plane_transform, *vertex_position);
         if vertex_dist <= 0.0 {
-            let normal = plane.normal();
+            let normal = -plane.normal();
             // contact point is mid-point between vertex and plane.
-            let point = *vertex_position + normal * (vertex_dist.abs() * 0.5);
+            let point = *vertex_position - normal * (vertex_dist.abs() * 0.5);
             let penetration = vertex_dist.abs();
 
             contacts.push(Contact {
-                entities: [None, Some(ent_cuboid)],
+                entities: vec![ent_cuboid],
                 normal,
                 penetration,
                 point,
+                relative_points: vec![point - cuboid_transform.translation],
             });
         }
     }
@@ -143,8 +153,8 @@ pub fn half_space_and_cuboid(
     Some(contacts)
 }
 
-/// Evaluates a two cuboids for intersection, generating a Contact if they are found to
-/// be intersecting.
+/// Evaluates two cuboids for intersection, generating a Contact if they are found to be
+/// intersecting.
 pub fn cuboid_and_cuboid(
     ent1: Entity,
     ent2: Entity,
@@ -278,10 +288,12 @@ fn calc_cuboid_edge_edge_contact(
     let contact_point = calc_point_between_skew_lines(c1_axis, c2_axis, c1_point, c2_point);
 
     Contact {
-        entities: [Some(ent1), Some(ent2)],
+        entities: vec![ent1, ent2],
         normal,
         penetration,
         point: contact_point,
+        relative_points: vec![contact_point - c1_transform.translation,
+            contact_point - c2_transform.translation],
     }
 }
 
@@ -363,10 +375,11 @@ fn calc_cuboid_face_vertex_contact(
     vertex = c2_transform.get_point_in_global_space(vertex);
 
     Contact {
-        entities: [Some(ent1), Some(ent2)],
+        entities: vec![ent1, ent2],
         normal,
         penetration,
         point: vertex,
+        relative_points: vec![vertex - c1_transform.translation, vertex - c2_transform.translation],
     }
 }
 
@@ -406,7 +419,7 @@ fn penetration_on_axis(
     axis: DVec3,
     centre_to_centre: DVec3,
 ) -> Option<f64> {
-    let distance = centre_to_centre.dot(axis);
+    let distance = centre_to_centre.dot(axis).abs();
 
     let overlap = c1.project_onto_axis(c1_transform, axis) +
         c2.project_onto_axis(c2_transform, axis) - distance;
@@ -489,7 +502,7 @@ mod test {
         // PENETRATION.
         let expected_penetration = 0.0005;
         let expected_contact_point = DVec3::ZERO;
-        let expected_normal = DVec3::Y;
+        let expected_normal = -DVec3::Y;
 
         let s_transform = PhysTransform::from_translation(
             DVec3::new(0.0, r - expected_penetration, 0.0),
@@ -601,13 +614,27 @@ mod test {
         // x-z plane with normal equivalent to y-axis.
         let p_transform = PhysTransform::IDENTITY;
         let p = Plane::new(&p_transform);
-        let expected_normal = DVec3::Y;
+        let expected_normal = -DVec3::Y;
+
+        // x-y plane with normal equivalent to z-axis.
+        let p2_transform = PhysTransform::from_rotation_translation(
+            DQuat::from_rotation_x(std::f64::consts::PI * 0.5),
+            DVec3::new(0.0, 50.0, -50.0),
+        );
+        let p2 = Plane::new(&p2_transform);
+        //let expected_normal_2 = -DVec3::Z;
 
         // NO PENETRATING VERTICES
         let c_transform = PhysTransform::from_translation(
             DVec3::new(0.0, 4.0, 0.0),
         );
         let contacts = half_space_and_cuboid(ent_c, &p, &c, &p_transform, &c_transform);
+        assert!(contacts.is_none());
+
+        let c_transform = PhysTransform::from_translation(
+            DVec3::new(-10.0, extents.y + 1.0, 0.0),
+        );
+        let contacts = half_space_and_cuboid(ent_c, &p2, &c, &p2_transform, &c_transform);
         assert!(contacts.is_none());
 
         // FOUR PENETRATING VERTICES.
@@ -620,6 +647,7 @@ mod test {
 
         assert_eq!(4, contacts.len());
         for contact in contacts.iter() {
+            println!("Contact = {:?}", contact);
             assert_eq!(expected_normal, contact.normal);
             assert_eq!(expected_penetration, contact.penetration);
             assert!((contact.point.y - -1.0).abs() < EPSILON);
@@ -679,7 +707,25 @@ mod test {
 
     #[test]
     fn test_cuboid_and_cuboid() {
-        // TODO
+        let ent_c1 = Entity::new(1);
+        let ent_c2 = Entity::new(2);
+
+        let extents = DVec3::new(3.0, 3.0, 4.0);
+        let c1 = Cuboid::new(extents);
+        let c2 = Cuboid::new(extents);
+
+        // NO PENETRATING VERTICES
+        let c1_transform = PhysTransform::from_translation(
+            DVec3::new(0.0, 0.0, 0.0),
+        );
+        let c2_transform = PhysTransform::from_translation(
+            DVec3::new(-15.0, 0.0, 0.0),
+        );
+        let contacts = cuboid_and_cuboid(ent_c1, ent_c2, &c1, &c2, &c1_transform, &c2_transform);
+        println!("contacts={:?}", contacts);
+        assert!(contacts.is_none());
+
+        // TODO additional intersection types.
         assert!(false);
     }
 }
