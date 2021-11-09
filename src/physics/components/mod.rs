@@ -4,8 +4,6 @@ mod collider;
 mod contact;
 mod force;
 mod force_and_torque_generators;
-mod impulse;
-mod impulsive_torque;
 mod inertia;
 mod mass;
 mod phys_transform;
@@ -23,8 +21,6 @@ pub use force_and_torque_generators::{
     Rotator,
     Thrust,
 };
-pub use impulse::Impulse;
-pub use impulsive_torque::ImpulsiveTorque;
 pub use inertia::InertiaTensor;
 pub use mass::Mass;
 pub use phys_transform::PhysTransform;
