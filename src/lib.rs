@@ -10,7 +10,7 @@ mod constants;
 /// Components, bundles and plugins to add debugging support to physics interactions.
 pub mod debug;
 
-/// Components, component bundles and plugins used to add physics interactions to your Bevy
+/// Components, component bundles and plugins used to add physics interactions to a Bevy
 /// application.
 pub mod physics;
 
