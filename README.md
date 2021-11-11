@@ -3,6 +3,8 @@
 A rudimentary 3D rigid-body physics simulation engine, integrated with the
 [Bevy](https://bevyengine.org/) game engine.
 
+https://user-images.githubusercontent.com/25724314/141330447-ab52371d-d03d-4e4d-8446-fda0b004a221.mp4
+
 # Roadmap
 
 - [x] Force & torque
