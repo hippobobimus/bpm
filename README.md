@@ -5,6 +5,8 @@ A rudimentary 3D rigid-body physics simulation engine, integrated with the
 
 https://user-images.githubusercontent.com/25724314/141330447-ab52371d-d03d-4e4d-8446-fda0b004a221.mp4
 
+https://user-images.githubusercontent.com/25724314/141335811-22947375-090e-47b5-8a6c-92a8b3c084d9.mp4
+
 # Roadmap
 
 - [x] Force & torque
@@ -83,10 +85,10 @@ The following examples are currently available:
 Upon pressing the 'Return' key, 1000 coloured balls of variable size and position, along with the
 user controllable red ball, are dropped above a green plane.
 
-#### drop_stack_of_balls
+#### drop_stacks_of_balls
 
-Upon pressing the 'Return' key, a stack of coloured balls, along with the user controllable red ball, are
-dropped above a green plane.
+Upon each press of the 'Return' key, stacks of coloured balls are dropped above a green plane.
+On the first press, the user controllable red ball is also spawned.
 
 # References
 
