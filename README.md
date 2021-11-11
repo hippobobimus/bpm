@@ -5,9 +5,17 @@ A rudimentary 3D rigid-body physics simulation engine, integrated with the
 
 # Roadmap
 
-- [x] Force & torque generation
+- [x] Force & torque
+    - [x] Force & torque generators
+    - [x] Force & torque accumulation
+
 - [x] Collision detection
+    - [x] Broad phase; spatial partitioning / oct-tree implementation
+    - [x] Narrow phase; contact generation
 - [ ] Collision resolution
+    - [x] Spheres and planes
+    - [ ] Cuboids
+    - [ ] Friction
 
 # Implementation
 
@@ -28,7 +36,7 @@ This is split into two main parts; broad-phase and narrow-phase.
 The __broad-phase__ is used to perform a relatively 'cheap' procedure to determine a subset of entity
 pairs that may be intersecting. All of the primitive shapes in use in the physics engine have a
 bounding sphere which is utilised to insert them into a spatial partitioning data structure.
-Specifically, I created an oct-tree implementation for this purpose. Once every frame the oct-tree
+Specifically, an oct-tree implementation was created for this purpose. Once every frame the oct-tree
 is queried for entities in close proximity and these are passed in pairs to the narrow-phase.
 
 In the __narrow-phase__, candidate pairs are evaluated. When found to be intersecting, a Contact is
@@ -37,12 +45,17 @@ normal that will be used for collision resolution.
 
 ### Collision Resolution
 
-In development...
+This takes the form of corrections to colliding bodies positions and motion, to simulate the results
+of the collision.
+
+First, appropriate impulsive forces and impulsive torques are calculated and used to update the
+linear and angular velocities of the bodies. Then linear movements and rotations are applied to the
+bodies to remove any interpenetration between them.
 
 # Examples
 
-Currently only a very basic example is available. This will change once collision resolution has
-been implemented, allowing for more interesting interactions.
+Some basic examples are available which, when run, show the simulation in action. Video clips of the
+examples can be viewed above.
 
 ### Pre-requisites
 
@@ -53,21 +66,25 @@ their website [here](https://www.rust-lang.org/tools/install).
 
 Clone this GitHub repository, navigate to its directory and run the following terminal command.
 
-    $ cargo --examples <EXAMPLE_NAME>
+    $ cargo --examples <EXAMPLE_NAME> --release
+
+In the examples, the large red ball is user controllable with the following key bindings:
+
+- 'Up/Down/Left/Right' or 'h/j/k/l' = movement in the x-z plane.
+- 'Spacebar' or 'w' = movement up in the positive y direction.
+- 's' = movement down in the positive y direction.
 
 The following examples are currently available:
 
-#### primative_playground
+#### drop_random_balls
 
-A very simple example in which a number of static cuboids and spheres are spawned randomly in 3D
-space, along with a rotating 'fan' (elongated cuboid). A single sphere can be controlled with the
-keyboard and upon 'collision' with any other object or plane, the contact data generated will be
-printed to the terminal.
+Upon pressing the 'Return' key, 1000 coloured balls of variable size and position, along with the
+user controllable red ball, are dropped above a green plane.
 
-Controls:
+#### drop_stack_of_balls
 
-- Up/Down/Left/Right = movement in the x-z plane.
-- Spacebar = movement upwards in the positive y direction.
+Upon pressing the 'Return' key, a stack of coloured balls, along with the user controllable red ball, are
+dropped above a green plane.
 
 # References
 
