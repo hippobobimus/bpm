@@ -27,7 +27,7 @@ pub static LOW_VELOCITY_THRESHOLD: f64 = 0.1;
 pub static LOW_ROTATION_THRESHOLD: f64 = 0.0001;
 // --Gravity
 lazy_static! {
-    pub static ref DEFAULT_GRAVITY: DVec3 = DVec3::new(0.0, -10.0, 0.0); // value of 'g'.
+    pub static ref DEFAULT_GRAVITY: DVec3 = DVec3::new(0.0, -20.0, 0.0); // value of 'g'.
 }
 // --Mass
 pub static DEFAULT_MASS: f64 = 10.0;
