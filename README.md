@@ -3,7 +3,7 @@
 A rudimentary 3D rigid-body physics simulation engine, integrated with the
 [Bevy](https://bevyengine.org/) game engine.
 
-https://user-images.githubusercontent.com/25724314/141330447-ab52371d-d03d-4e4d-8446-fda0b004a221.mp4
+https://user-images.githubusercontent.com/25724314/141446964-c84d3ad8-2a72-43a1-8ced-868b55bffec2.mp4
 
 https://user-images.githubusercontent.com/25724314/141335811-22947375-090e-47b5-8a6c-92a8b3c084d9.mp4
 
@@ -80,7 +80,7 @@ In the examples, the large red ball is user controllable with the following key 
 
 The following examples are currently available:
 
-#### drop_random_balls
+#### drop_1000_random_balls
 
 Upon pressing the 'Return' key, 1000 coloured balls of variable size and position, along with the
 user controllable red ball, are dropped above a green plane.
