@@ -5,10 +5,8 @@ use lazy_static::lazy_static;
 // TODO make this user defined and not hard-coded.
 pub static PLAY_AREA_CENTRE_X: f64 = 0.0;
 pub static PLAY_AREA_CENTRE_Y: f64 = 100.0;
-pub static PLAY_AREA_CENTRE_Z: f64 = 0.0;
 pub static PLAY_AREA_EXTENT_X: f64 = 100.0;
 pub static PLAY_AREA_EXTENT_Y: f64 = 100.0;
-pub static PLAY_AREA_EXTENT_Z: f64 = 100.0;
 
 // Physics
 
